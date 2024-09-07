@@ -1,0 +1,292 @@
+:root {
+    --metadata-width: 530px;
+    --star-rating-width: 150px;
+}
+
+#mappool-name {
+    margin: 10px 0;
+
+    text-align: center;
+    color: white;
+}
+
+.star-container:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.favorite-star {
+    width: 30px;
+    height: 30px;
+}
+
+#mappool-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.top-bar {
+    width: 100%;
+    max-width: 950px;
+    height: 5px;
+
+    border-radius: 3px 3px 0 0;
+}
+
+.top-bar.small {
+    display: none;
+}
+
+.beatmap {
+    width: 100%;
+    max-width: 950px;
+    height: 100px;
+
+    border-radius: 0 0 3px 3px;
+
+    display: flex;
+
+    position: relative;
+}
+
+.beatmap-cover-fade-wrapper {
+    height: 100px;
+    width: 250px;
+
+    position: relative;
+}
+
+.beatmap-cover {
+    height: 100%;
+    width: 100%;
+
+    border-radius: 0 0 0 3px;
+
+    object-fit: cover;
+}
+
+.beatmap-cover-fade {
+    height: 100%;
+    width: 100%;
+
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: linear-gradient(to right, rgba(0,0,0,0.3) 0%, rgba(56,66,80,255) 100%);
+}
+
+.modification {
+    margin-left: 10px;
+    margin-top: 20px;
+
+    font-size: 40px;
+    font-weight: 600;
+
+    color: white;
+}
+
+.title, .difficulty, .artist, .mapper {
+    margin: 0;
+    padding: 0 5px;
+
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space:nowrap;
+    text-wrap: nowrap;
+}
+
+.title {
+    width: calc(var(--metadata-width) - 10px);
+    font-size: 30px;
+    font-weight: 600;
+    margin-top: 10px;
+    letter-spacing: 2px;
+
+    color: white;
+}
+
+.artist {
+    width: calc(var(--metadata-width) * 2 / 3 - 10px);
+    font-size: 20px;
+}
+
+.mapper {
+    width: calc(var(--metadata-width) / 3 - 10px);
+    font-size: 20px;
+
+    text-align: right;
+}
+
+.difficulty {
+    width: calc(var(--star-rating-width) - 10px);
+    font-size: 12px;
+
+    color: white;
+    text-align: center;
+}
+
+.column-container {
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.row-container {
+    width: 100%;
+
+    display: flex;
+    justify-content: space-between;
+}
+
+.metadata-container {
+    width: var(--metadata-width);
+    margin: 0 10px;
+}
+
+.star-rating-container {
+    width: var(--star-rating-width);
+    align-items: center;
+}
+
+.star-rating {
+    font-size: 35px;
+    font-weight: 600;
+    margin: 0;
+    margin-top: 10px;
+
+    color: white;
+    text-align: center;
+}
+
+.difficulty-metadata-container {
+    width: 130px;
+    height: 100px;
+
+    position: absolute;
+
+    gap: 1.5px;
+}
+
+.difficulty-metadata-row {
+    width: 100%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.difficulty-metadata-label {
+    margin: 0;
+    font-size: 12px;
+
+    color: white;
+}
+
+.difficulty-metadata-bar {
+    height: 12px;
+    width: 80px;
+
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.difficulty-metadata-inner-bar {
+    height: 100%;
+    width: 60%;
+
+    background-color: white;
+}
+
+.star-rating, .difficulty, .difficulty-metadata-container {
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+
+.star-rating.hidden, .difficulty.hidden, .difficulty-metadata-container.hidden {
+    opacity: 0;
+}
+
+@media (max-width: 970px) {
+    .beatmap-link-wrapping {
+        width: 100%;
+    }
+
+    .beatmap {
+        height: auto;
+
+        flex-direction: column;
+        align-items: end;
+    }
+
+    .beatmap-cover-fade {
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .beatmap-cover-fade-wrapper {
+        width: 100%;
+        position: absolute;
+    }
+
+    .metadata-container {
+        width: calc(100% - 150px);
+
+        z-index: 1;
+    }
+
+    .star-rating-container {
+        width: 100%;
+        height: auto;
+
+        background-color: var(--bg-color2);
+
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+
+        z-index: 1;
+    }
+
+    .star-rating {
+        margin-top: 0;
+    }
+
+    .star-rating-diff-container {
+        display: block;
+        padding: 5px;
+    }
+
+    .difficulty-metadata-container {
+        height: 100%;
+
+        position: relative;
+
+        flex-direction: row;
+        flex-wrap: wrap;
+        flex-grow: 1;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .difficulty-metadata-container.hidden {
+        opacity: 1;
+    }
+    
+    .difficulty-metadata-row {
+        width: auto;
+    }
+
+    .difficulty-metadata-label {
+        text-wrap: nowrap;
+        margin-right: 5px;
+    }
+
+    .top-bar {
+        display: none;
+    }
+
+    .top-bar.small {
+        display: block;
+    }
+}

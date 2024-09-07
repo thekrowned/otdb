@@ -1,0 +1,12 @@
+django==5.0.6
+django-debug-toolbar==4.4.5
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+osu.py==2.1.2
+whitenoise==6.7.0
+git+https://github.com/Sheppsu/beatmap_reader@984975b598f1275e8bf0b265d1eb638d4bd3a36f#egg=beatmap_reader
+rosu-pp-py==1.0.1
+requests==2.32.3
+pytest-django==4.8.0
+pytest-asyncio==0.23.7
+aiofiles==24.1.0

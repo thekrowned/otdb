@@ -1,0 +1,50 @@
+{% load static %}
+<!doctype html>
+<html>
+    <head>
+        {% block head %}{% endblock head %}
+        <link rel="stylesheet" type="text/css" href="{% static 'css/bundled.css' %}">
+
+        <meta charset="UTF-8">
+        <meta name="description" content="osu! tournament database website">
+        <meta name="keywords" content="osu osu! tournament mappool database db sheppsu tdb otdb o!tdb 1v1 bot match cookiezi 1k pp">
+        <meta name="author" content="sheppsu">
+        <meta name="viewport" content="width=device-width">
+
+        <title>o!TDB - {% block title %}{% endblock title %}</title>
+
+        {{ data|json_script:"data" }}
+    </head>
+    <body>
+        <div class="header">
+            <div class="header-item left">
+                <a class="header-link large" href="{% url 'index' %}">o!TDB</a>
+            </div>
+            <div class="header-item">
+                <a class="header-link" href="{% url 'tournaments' %}">Tournaments</a>
+            </div>
+            <div class="header-item">
+                <a class="header-link" href="{% url 'mappools' %}">Mappools</a>
+            </div>
+            <div class="empty-header-item"></div>
+            {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}"><img class="login-avatar" src="{{ user.avatar }}"></a>
+            {% else %}
+            <a href="{{ auth_url }}"><div class="login-container">Login</div></a>
+            {% endif %}
+        </div>
+        <div id="actual-body">
+            {% block body %}{% endblock body %}
+        </div>
+        <div id="backdrop" class="prevent-select hide"></div>
+        <div id="event-container"></div>
+        <div id="popup" class="hidden">
+            <p>Popup prompt</p>
+        </div>
+        <footer>
+            <div class="footer">
+                <p>Created by sheppsu</p>
+            </div>
+        </footer>
+    </body>
+</html>

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+{% if editing %}
+{{ tournament|json_script:"tournament-data" }}
+{% endif %}
+{% endblock head %}
+{% block title %}{% if editing %}Editing tournament{% else %}New tournament{% endif %}{% endblock title %}
+{% block body %}
+<div class="page-container">
+    <div class="page-section">
+        <h1 class="section-label">Tournament metadata</h1>
+        <div class="input-container prevent-select">
+            <form-input id="name-input" type="text" label="Full name" validation="any" required max-length="64"></form-input>
+            <form-input id="abbreviation-input" type="text" label="Abbreviation" validation="any" max-length="8"></form-input>
+            <form-input id="link-input" type="text" label="Link" validation="any" max-length="256"></form-input>
+        </div>
+        <div class="input-container prevent-select">
+            <form-input id="description-input" type="text" label="Description" validation="any" max-length="512" textarea></form-input>
+        </div>
+    </div>
+    <div id="users-section" class="page-section">
+        <h1 class="section-label">Mappools</h1>
+        <div class="input-container prevent-select">
+            <form-input id="add-mappool" type="button" label="+" square></form-input>
+        </div>
+        <h1 id="staff-label" class="section-label">Staff</h1>
+        <div class="input-container prevent-select">
+            <form-input id="add-user" type="button" label="+" square></form-input>
+        </div>
+        <div class="input-container prevent-select" style="margin-top:20px;">
+            <form-input id="submit" type="button" label="Submit tournament"></form-input>
+        </div>
+    </div>
+</div>
+<script type="module">
+    import { tournamentFormSetup } from "{% static 'js/bundled.js' %}";
+    tournamentFormSetup({% if editing%}true{% else %}false{% endif %});
+</script>
+{% endblock body %}

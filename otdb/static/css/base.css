@@ -1,0 +1,308 @@
+@import url("https://fonts.googleapis.com/css?family=Poppins");
+
+:root {
+    --fg-color1: #567bb3;
+    --fg-color2: #505e73;
+    --bg-color1: #cbd7ea;
+    --bg-color2: #323e51;
+    --hazard-color: #73505e;
+    --hover-hazard-color: #91596f;
+    --hover-bg-color1: #e9eef6;
+    --hover-bg-color2: #596f91;
+    --text-color1: #cbd3de;
+    --text-color2: #bdd2f3;
+    --hover-text-color1: #ebeef2;
+    --hover-text-color2: #94b6ec;
+    --dark-error-red: #7f0006;
+    --muted-red: #bd3e3e;
+    --event-info: #268BFF;
+    --event-error: #e1000b;
+}
+
+html {
+    position: relative;
+}
+
+body {
+    margin: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    font-size: 24px;
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-color1);
+    color: var(--text-color2);
+}
+
+a {
+    text-decoration: none;
+    color: var(--text-color1);
+}
+
+a:hover {
+    color: var(--hover-text-color1);
+}
+
+p {
+    margin: 0;
+}
+
+hr {
+    width: 100%;
+    height: 1px;
+    margin: 5px 0;
+    border: 0;
+
+    background-color: white;
+}
+
+#actual-body {
+    width: 100%;
+    min-height: calc(100vh - 150px);
+    padding-bottom: 50px;
+}
+
+/* Header */
+
+.header {
+    width: 100%;
+    height: 50px;
+
+    position: sticky;
+    top: 0;
+
+    display: flex;
+    gap: 15px;
+
+    background-color: var(--fg-color1);
+
+    z-index: 9;
+}
+
+.header-item {
+    display: flex;
+    align-items: center;
+    color: var(--text-color1);
+    transition: color 0.1s;
+}
+
+.header-item.left {
+    margin-left: 10px;
+}
+
+.empty-header-item {
+    flex-grow: 1;
+}
+
+.header-item:hover {
+    color: var(--hover-text-color1);
+    cursor: pointer;
+}
+
+.header-link {
+    color: inherit;
+}
+
+.header-link.large {
+    font-size: 32px;
+    font-weight: 800;
+}
+
+.login-container {
+    width: 100px;
+    height: 35px;
+    margin-top: 3px;
+    margin-right: 10px;
+
+    border: 3px solid var(--bg-color2);
+    border-radius: 3px;
+
+    background-color: var(--fg-color2);
+    color: var(--text-color2);
+    text-align: center;
+    transition: background-color 0.1s;
+}
+
+.login-container:hover {
+    background-color: var(--hover-bg-color2);
+}
+
+.login-avatar {
+    width: 40px;
+    height: 40px;
+    margin-top: 5px;
+    margin-right: 10px;
+
+    border-radius: 40px;
+}
+
+.login-avatar:hover {
+    margin-top: 2px;
+    margin-right: 7px;
+
+    border: 3px solid white;
+
+    cursor: pointer;
+}
+
+/* footer */
+
+footer {
+    width: 100%;
+    height: 50px;
+
+    background-color: var(--fg-color1);
+    overflow: hidden;
+}
+
+.footer {
+    width: 100%;
+    height: 100%;
+    padding-left: 5px;
+
+    display: flex;
+    justify-content: left;
+    align-items: center;
+}
+
+/* broad stuff */
+
+.page-container {
+    width: calc(100% - 20px);
+    max-width: 1000px;
+
+    margin: auto;
+    padding: 10px;
+
+    border-radius: 0 0 10px 10px;
+
+    background-color: var(--fg-color2);
+}
+
+.page-section {
+    width: 100%;
+    margin: 10px 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.section-label {
+    margin: 10px 0;
+    color: white;
+}
+
+.sub-section-label {
+    margin: 2px 0;
+    font-size: 24;
+}
+
+.prevent-select {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.description {
+    margin: 5px 0;
+    color: white;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Backdrop */
+
+#backdrop {
+    width: 100vw;
+    height: 100vh;
+
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    background-color: black;
+    opacity: 0.5;
+    transition: opacity 0.2s ease-out;
+    z-index: 10;
+}
+
+#backdrop.hide {
+    opacity: 0;
+    z-index: -10;
+}
+
+/* popup */
+
+#popup {
+    width: 100%;
+    max-width: 500px;
+    top: 100px;
+    left: calc(50% - 250px);
+    padding: 10px;
+
+    position: absolute;
+
+    border-radius: 5px;
+
+    background-color: var(--fg-color1);
+    z-index: 11;
+}
+
+@media (max-width: 500px) {
+    #popup {
+        left: 0;
+    }
+}
+
+/* error */
+
+#event-container {
+    width: calc(100% - 20px);
+    max-width: 250px;
+
+    position: fixed;
+    right: 10px;
+    bottom: 5px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.event {
+    width: calc(100% - 10px);
+    padding: 5px;
+
+    border-radius: 10px;
+    border: solid var(--event-info) 2px;
+    box-shadow: 0px 0px 30px var(--event-info);
+
+    z-index: 20;
+
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.event.error {
+    border-color: var(--event-error);
+    box-shadow: 0px 0px 30px var(--event-error);
+}
+
+.event-description {
+    font-size: 15px;
+}
+
+.event-bar {
+    height: 3px;
+    
+    border-radius: 3px;
+
+    background-color: var(--event-info);
+}
+
+.event-bar.error {
+    background-color: var(--event-error);
+}

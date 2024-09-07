@@ -1,0 +1,18 @@
+# python stuff
+.idea/
+.venv/
+
+# build/runtime files
+otdb/cache/
+otdb/staticfiles/
+otdb/ts/node_modules/
+otdb/static/js/
+*.pyc
+*.sqlite3
+
+# development files
+test.py
+.env
+.pgpass
+*.pem
+pools.json

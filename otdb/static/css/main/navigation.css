@@ -1,0 +1,39 @@
+#loading-text {
+    text-align: center;
+}
+
+#page-navigator {
+    width: 100%;
+    margin: auto;
+    margin-top: 10px;
+    padding: 10px 0;
+
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.page-button {
+    width: 50px;
+    height: 40px;
+    padding-top: 10px;
+
+    border-radius: 3px;
+
+    font-size: 20px;
+    background-color: rgba(0, 0, 0, 0.4);
+    text-align: center;
+}
+
+.page-button:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.page-button.active {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.page-button.active:hover {
+    cursor: default;
+}

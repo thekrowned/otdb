@@ -1,0 +1,64 @@
+from django.db import models
+from django.conf import settings
+
+from osu import AsynchronousClient, AsynchronousAuthHandler, Scope
+
+
+osu_client: AsynchronousClient = settings.OSU_CLIENT
+
+
+class UserManager(models.Manager):
+    async def create_user(self, code):
+        auth = AsynchronousAuthHandler(
+            settings.OSU_CLIENT_ID,
+            settings.OSU_CLIENT_SECRET,
+            settings.OSU_CLIENT_REDIRECT_URI,
+            scope=Scope.identify()
+        )
+        try:
+            await auth.get_auth_token(code)
+            client = AsynchronousClient(auth)
+            data = await client.get_own_data()
+        except:
+            return
+
+        user = await OsuUser.from_data(data)
+        await user.asave()
+        return user
+
+
+class OsuUser(models.Model):
+    is_anonymous = False
+    is_authenticated = True
+
+    id = models.PositiveBigIntegerField(unique=True, primary_key=True)
+    username = models.CharField(max_length=15)
+    avatar = models.CharField()
+    cover = models.CharField()
+
+    is_admin = models.BooleanField(default=False)
+
+    REQUIRED_FIELDS = []
+    # this field has to be unique but there is a scenario where
+    # the username could not be unique
+    USERNAME_FIELD = "id"
+    objects = UserManager()
+
+    @classmethod
+    async def from_data(cls, data):
+        try:
+            user = await OsuUser.objects.aget(id=data.id)
+            user.username = data.username
+            user.avatar = data.avatar_url
+            user.cover = data.cover.url
+            return user
+        except OsuUser.DoesNotExist:
+            return cls(
+                id=data.id,
+                username=data.username,
+                avatar=data.avatar_url,
+                cover=data.cover.url
+            )
+
+    def __str__(self):
+        return self.username

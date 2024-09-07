@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "outDir": "../static/js",
+        "target": "ES2022",
+        "moduleResolution": "node",
+        "removeComments": true,
+
+        "jsx": "react",
+        "jsxFactory": "jsx",
+        "jsxFragmentFactory": "jsx.Fragment"
+    }
+}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Mappools{% endblock title %}
+{% block body %}
+<div class="page-container">
+    <div id="sort-menu">
+        <div>Sort</div>
+        <div id="recent-sort" class="clickable">Recent</div>
+        <div id="favorite-sort" class="clickable">Favorites</div>
+        <div id="trending-sort" class="clickable">Trending</div>
+        <div style="flex-grow: 1;"></div>
+        <a href="{% url 'new_mappool' %}"><div id="add-mappool" class="clickable">Add mappool</div></a>
+    </div>
+    <h1 id="loading-text">Loading...</h1>
+    <div id="mappools-container" class="listing-container"></div>
+    <div id="page-navigator"></div>
+</div>
+<script type="module">
+    import { mappoolsSetup } from "{% static 'js/bundled.js' %}";
+    mappoolsSetup();
+</script>
+{% endblock body %}

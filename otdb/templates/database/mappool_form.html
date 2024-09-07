@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+{% if editing %}
+{{ mappool|json_script:"mappool-data" }}
+{% endif %}
+{% endblock head %}
+{% block title %}{% if editing %}Editing mappool{% else %}New mappool{% endif %}{% endblock title %}
+{% block body %}
+<div class="page-container">
+    <div class="page-section">
+        <h1 class="section-label">Mappool metadata</h1>
+        <div class="input-container prevent-select">
+            <form-input id="name-input" type="text" label="Pool name" validation="any" required max-length="64"></form-input>
+        </div>
+    </div>
+    <div id="beatmap-section" class="page-section">
+        <h1 class="section-label">Beatmaps</h1>
+        <div class="input-container prevent-select">
+            <form-input id="add-beatmap" type="button" label="+" square></form-input>
+            <form-input id="quick-add-beatmaps" type="button" label="Quick add"></form-input>
+        </div>
+        <div class="input-container prevent-select" style="margin-top:20px;">
+            <form-input id="submit" type="button" label="Submit mappool"></form-input>
+        </div>
+    </div>
+</div>
+<div id="quick-add-container" class="hidden">
+    <p class="description">Input line-separated list of values</p>
+    <p class="description" style="font-size: 15px">Hint: you can copy-paste directly from a google sheet</p>
+    <form-input id="quick-add-beatmaps-input" type="text" label="Beatmap IDs" innerStyle="width: 100%;" textarea></form-input>
+    <form-input id="quick-add-slots-input" type="text" label="Slots" innerStyle="width: 100%;" textarea></form-input>
+    <div class="input-container prevent-select prevent-select">
+        <form-input id="quick-add-beatmaps-btn" type="button" label="Add beatmaps"></form-input>
+    </div>
+</div>
+<script type="module">
+    import { mappoolFormSetup } from "{% static 'js/bundled.js' %}";
+    mappoolFormSetup({% if editing%}true{% else %}false{% endif %});
+</script>
+{% endblock body %}

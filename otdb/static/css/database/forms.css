@@ -1,0 +1,253 @@
+input, textarea {
+    width: calc(100% - 5.2px);
+    color: white;
+}
+
+form-input {
+    position: relative;
+}
+
+inner-form-input {
+    min-height: 40px;
+
+    display: block;
+    position: relative;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Dropdown */
+
+.dropdown {
+    width: 100%;
+    max-height: 200px;
+    margin-left: -5px;
+
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+
+    background-color: white;
+    color: var(--fg-color2);
+
+    text-align: center;
+    overflow-y: scroll;
+    z-index: 3;
+}
+
+.dropdown.hidden, .dropdown-item.hidden {
+    display: none;
+}
+
+.dropdown-item {
+    margin: 0;
+    padding: 5px;
+    font-size: 16px;
+}
+
+.dropdown-item:hover {
+    cursor: pointer;
+    background-color: var(--hover-bg-color1);
+}
+
+.dropdown-input-container {
+    max-width: 100%;
+    min-height: 100%;
+    margin-top: 10px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.dropdown-multi-answer-container {
+    padding: 0 5px;
+
+    position: relative;
+
+    background-color: var(--hover-bg-color2);
+
+    border-radius: 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+}
+
+.dropdown-multi-answer {
+    font-size: 20px;
+    color: white;
+}
+
+.dropdown-multi-answer-remove {
+    width: 10px;
+    height: 10px;
+}
+
+.dropdown-multi-answer-remove:hover {
+    cursor: pointer;
+}
+
+.dropdown-multi-answer-svg {
+    position: absolute;
+    right: 5px;
+}
+
+/* Text input */
+
+.text-input-container {
+    width: 250px;
+    padding: 5px;
+    padding-top: 15px;
+    border-radius: 3px;
+
+    background-color: var(--bg-color2);
+    border: 1px solid var(--bg-color2);
+    transition: border 0.1s;
+}
+
+.text-input-container.textarea {
+    padding-top: 25px;
+}
+
+.text-input-container.invalid {
+    border: 1px solid red;
+}
+
+.text-input-label {
+    position: absolute;
+
+    margin: 0;
+    font-size: 20px;
+    transition: font-size 0.2s, margin 0.2s;
+
+    z-index: 1;
+}
+
+.text-input-label:hover {
+    cursor: text;
+}
+
+.text-input-label.active {
+    margin-top: -10px;
+    font-size: 14px;
+    cursor: default;
+}
+
+.text-input-label.textarea {
+    margin-left: 5px;
+}
+
+.text-input-label.textarea.active {
+    margin-top: -20px;
+}
+
+.text-input-required {
+    width: inherit;
+    font-size: 24px;
+    margin: 0;
+    margin-top: -10px;
+
+    position: absolute;
+    text-align: right;
+    color: var(--muted-red);
+}
+
+.text-input {
+    min-height: 25px;
+    width: 100%;
+    font-size: 20px;
+    padding: 0;
+
+    position: relative;
+
+    border: none;
+    outline: none;
+    background: none;
+    appearance: none;
+    transition: opacity 0.2s 0ms cubic-bezier(.4,0,.2,1);
+
+    z-index: 2;
+}
+
+.text-input.textarea {
+    resize: none;
+}
+
+/* Button */
+
+.button {
+    padding: 8.5px;
+
+    border: 3px solid var(--bg-color2);
+    border-radius: 3px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--fg-color2);
+    text-align: center;
+    transition: background-color 0.1s;
+}
+
+.button.danger {
+    background-color: var(--hazard-color);
+}
+
+.button.square {
+    aspect-ratio: 1 / 1;
+}
+
+.button.disabled {
+    background-color: var(--bg-color2);
+}
+
+.button:hover {
+    cursor: pointer;
+    background-color: var(--hover-bg-color2);
+}
+
+.button.disabled {
+    cursor: unset;
+    background-color: var(--bg-color2);
+}
+
+.button.danger:hover {
+    background-color: var(--hover-hazard-color)
+}
+
+/* Quick add container */
+
+#quick-add-container {
+    width: 500px;
+    top: 200px;
+    left: calc(50% - 250px);
+    padding: 5px;
+
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    border: 3px solid white;
+    border-radius: 5px;
+
+    background-color: var(--fg-color2);
+    z-index: 11;
+}
+
+#quick-add-container.hidden {
+    display: none;
+}
+
+#quick-add-beatmaps-input, #quick-add-slots-input {
+    width: 485px;
+}

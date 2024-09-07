@@ -1,0 +1,44 @@
+.interaction-container {
+    padding: 5px 20px;
+
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+}
+
+.clickable {
+    height: 30px;
+    padding: 5px;
+
+    border-radius: 3px;
+
+    font-size: 20px;
+    background-color: rgba(0, 0, 0, 0.4);
+    text-wrap: nowrap;
+
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.clickable:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.clickable.active {
+    border: 2px solid white;
+}
+
+.clickable.active:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+    cursor: unset;
+}
+
+.clickable.hazard {
+    background-color: var(--hazard-color);
+}
+
+.clickable.hazard:hover {
+    background-color: var(--hover-hazard-color);
+}
