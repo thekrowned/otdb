@@ -8,6 +8,7 @@ import itertools
 TS_DIR = "."
 JS_DIR = os.path.join(os.path.pardir, "static", "js")
 CSS_DIR = os.path.join(os.path.pardir, "static", "css")
+TSC = os.path.join(os.getenv("APPDATA"), "npm", "tsc.cmd")
 BUNDLE_UNFINISHED = os.path.join(os.path.pardir, "static", "js", "bundled-unfinished.js")
 BUNDLED = os.path.join(os.path.pardir, "static", "js", "bundled.js")
 BUNDLED_CSS = os.path.join(os.path.pardir, "static", "css", "bundled.css")
@@ -26,8 +27,6 @@ def fix_imports_for(outfile, path, context):
 
             if "import" in line and "http" not in line:
                 continue
-                # line = line.strip()
-                # outfile.write(line[:-2]+".js"+line[-2:]+"\n")
             if line.startswith("export") and not line.split("(", 2)[0].endswith("Setup"):
                 outfile.write(line[15 if "default" in line else 7:])
             else:
