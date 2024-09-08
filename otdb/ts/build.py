@@ -8,7 +8,6 @@ import itertools
 TS_DIR = "."
 JS_DIR = os.path.join(os.path.pardir, "static", "js")
 CSS_DIR = os.path.join(os.path.pardir, "static", "css")
-TSC = os.path.join(os.getenv("APPDATA"), "npm", "tsc.cmd")
 BUNDLE_UNFINISHED = os.path.join(os.path.pardir, "static", "js", "bundled-unfinished.js")
 BUNDLED = os.path.join(os.path.pardir, "static", "js", "bundled.js")
 BUNDLED_CSS = os.path.join(os.path.pardir, "static", "css", "bundled.css")
