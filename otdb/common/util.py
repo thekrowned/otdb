@@ -11,9 +11,9 @@ def unzip(iterable):
         yield map(lambda item: item[i], iterable)
 
 
-def find_invalids(all_items, found_items, cmp):
-    for item in found_items:
+def find_invalids(valid_items, sus_items, cmp):
+    for item in sus_items:
         try:
-            next(filter(lambda a: cmp(item, a), all_items))
+            next(filter(lambda a: cmp(a, item), valid_items))
         except StopIteration:
             yield item

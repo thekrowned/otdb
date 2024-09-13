@@ -6,7 +6,7 @@ from common.models import enum_field
 from common.exceptions import ClientException, ServerException
 from common.util import sql_s, unzip, find_invalids
 
-from osu import AsynchronousClient, Beatmap, Mods, Mod
+from osu import AsynchronousClient, Beatmap, Mods, Mod, GameModeStr
 from enum import IntFlag
 from aiohttp import ClientSession
 from asgiref.sync import sync_to_async
@@ -18,13 +18,18 @@ import os
 import itertools
 
 
+OsuUser = get_user_model()
+osu_client: AsynchronousClient = settings.OSU_CLIENT
+log = logging.getLogger(__name__)
+
+
 class BeatmapCacheManager:
     CACHE_DIR = os.path.join(settings.BASE_DIR, "cache")
 
     def __init__(self) -> None:
         if not os.path.isdir(self.CACHE_DIR):
             os.mkdir(self.CACHE_DIR)
-        
+
         self._lock = asyncio.Lock()
 
     @staticmethod
@@ -34,25 +39,26 @@ class BeatmapCacheManager:
                 # shouldn't happen, but just in case
                 if resp.status == 404:
                     raise ClientException(f"Invalid beatmap id: {id}")
-                
+
                 if resp.status == 429:
-                    raise ServerException(f"I've been ratelimited by the osu site :( try again later")
-                
+                    raise ServerException(f"I've been rate limited by the osu site :( try again later")
+
                 if 500 <= resp.status <= 599:
                     raise ServerException(f"Unexpected error from osu server")
-                
+
                 resp.raise_for_status()
 
                 async with aiofiles.open(path, mode="wb") as f:
                     await f.write(await resp.read())
 
     async def get_beatmap_attributes(self, beatmap: Beatmap, mods: int) -> rosu.DifficultyAttributes:
+        # osu doesn't like concurrent requests to this endpoint
         await self._lock.acquire()
 
         osu_path = os.path.join(self.CACHE_DIR, f"{beatmap.checksum}.osu")
 
         if not os.path.exists(osu_path):
-            print("Downloading "+beatmap.checksum)
+            log.info("Downloading " + beatmap.checksum)
             await self._download(beatmap.id, osu_path)
 
         self._lock.release()
@@ -64,9 +70,6 @@ class BeatmapCacheManager:
         return difficulty
 
 
-OsuUser = get_user_model()
-osu_client: AsynchronousClient = settings.OSU_CLIENT
-log = logging.getLogger(__name__)
 beatmap_cache = BeatmapCacheManager()
 
 
@@ -114,19 +117,22 @@ class BeatmapMetadata(models.Model):
 
 class BeatmapMod(models.Model):
     acronym = models.CharField(max_length=2)
-    settings = models.JSONField(null=True)
+    settings = models.JSONField(default=dict)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["acronym", "settings"], name="beatmapmod_unique_constraint")
+        ]
 
 
 class MappoolBeatmap(models.Model):
-    # TODO: account for other gamemodes
     beatmapset_metadata = models.ForeignKey(BeatmapsetMetadata, models.PROTECT, related_name="mappool_beatmaps")
     beatmap_metadata = models.ForeignKey(BeatmapMetadata, models.PROTECT, related_name="mappool_beatmaps")
-    slot = models.CharField(max_length=8)
     mods = models.ManyToManyField(BeatmapMod, "related_beatmaps")
     star_rating = models.FloatField()
 
     @staticmethod
-    async def get_rows_data(beatmap: Beatmap, slot: str, mods: tuple[str | None, ...]):
+    async def get_rows_data(beatmap: Beatmap, mods: tuple[str | None, ...]):
         mods_flag = 0
         for mod in filter(lambda m: m is not None, mods):
             try:
@@ -153,14 +159,13 @@ class MappoolBeatmap(models.Model):
             beatmap.total_length,
             beatmap.bpm
         )
-        mpbm_row = "ROW(0, %s, %f, %d, %d)::database_mappoolbeatmap" % (
-            sql_s(slot),
+        mpbm_row = "ROW(0, %f, %d, %d)::database_mappoolbeatmap" % (
             difficulty.stars,
             int(beatmap.id),
             int(bms.id)
         )
         mods_row = "ARRAY[" + ",".join(map(
-            lambda mod: ("ROW(0, %s, null)" % sql_s(mod)) if mod is not None else "null",
+            lambda mod: ("ROW(0, %s, '{}')" % sql_s(mod)) if mod is not None else "null",
             mods
         )) + "]::database_beatmapmod[]"
 
@@ -170,9 +175,15 @@ class MappoolBeatmap(models.Model):
         return self.slot
 
 
+class MappoolBeatmapConnection(models.Model):
+    mappool = models.ForeignKey("Mappool", models.CASCADE, related_name="beatmap_connections")
+    beatmap = models.ForeignKey(MappoolBeatmap, models.CASCADE, related_name="mappool_connections")
+    slot = models.CharField(max_length=8)
+
+
 class Mappool(models.Model):
     name = models.CharField(max_length=64)
-    beatmaps = models.ManyToManyField(MappoolBeatmap, "mappools")
+    beatmaps = models.ManyToManyField(MappoolBeatmap, "mappools", through=MappoolBeatmapConnection)
     submitted_by = models.ForeignKey(OsuUser, models.PROTECT, related_name="submitted_mappools")
     favorites = models.ManyToManyField(OsuUser, through="MappoolFavorite", related_name="mappool_favorites")
     avg_star_rating = models.FloatField()
@@ -181,11 +192,12 @@ class Mappool(models.Model):
         super().__init__(*args, **kwargs)
 
     @staticmethod
-    def _new_mappool(cls, id: int, name: str, submitted_by: OsuUser, data):
+    def _new_mappool(cls, id: int, name: str, slots: list[str], submitted_by: OsuUser, data):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT \"new_mappool\"(%s, %d, ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], %d)" % (
+            cursor.execute("SELECT \"new_mappool\"(%s, %d, ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], %d)" % (
                 sql_s(name),
                 submitted_by.id,
+                ",".join(map(sql_s, slots)),
                 *map(",".join, unzip(data)),
                 id
             ))
@@ -201,28 +213,32 @@ class Mappool(models.Model):
         mods: list[list[str]],
         mappool_id: int = 0
     ):
-        beatmaps = await osu_client.get_beatmaps(beatmap_ids)
+        unique_beatmap_ids = set(beatmap_ids)
+        beatmaps = await osu_client.get_beatmaps(unique_beatmap_ids)
 
-        if len(beatmaps) != len(beatmap_ids):
+        for beatmap in beatmaps:
+            if beatmap.mode != GameModeStr.STANDARD:
+                raise ClientException("Sorry! Only osu!std mappools are supported at the moment.")
+
+        if len(beatmaps) != len(unique_beatmap_ids):
             raise ClientException(
                 f"Invalid beatmap id(s): "
-                f"{', '.join(map(str, find_invalids(beatmap_ids, beatmaps, lambda id, b: b.id == id)))}"
+                f"{', '.join(map(str, find_invalids(beatmaps, unique_beatmap_ids, lambda b, id: b.id == id)))}"
             )
 
-        beatmaps = sorted(beatmaps, key=lambda b: beatmap_ids.index(b.id))
+        beatmaps = [next((beatmap for beatmap in beatmaps if beatmap.id == id)) for id in beatmap_ids]
 
         max_mods = sorted(map(len, mods))[-1]
         # not using gather as to not barrage the site
-        data = [
-            await MappoolBeatmap.get_rows_data(
+        data = asyncio.gather(*(
+            MappoolBeatmap.get_rows_data(
                 beatmaps[i],
-                slots[i].upper(),
                 tuple(map(str.upper, mods[i])) + tuple((None for _ in range(max_mods - len(mods[i]))))
             )
             for i in range(len(beatmaps))
-        ]
+        ))
 
-        return await sync_to_async(cls._new_mappool)(cls, mappool_id, name, submitted_by, data)
+        return await sync_to_async(cls._new_mappool)(cls, mappool_id, name, slots, submitted_by, data)
 
     async def is_favorited(self, user_id: int):
         return await MappoolFavorite.objects.filter(mappool_id=self.id, user_id=user_id).acount() > 0

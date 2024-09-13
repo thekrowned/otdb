@@ -87,10 +87,11 @@ async def get_full_mappool(user, mappool_id) -> dict:
         "submitted_by",
     )
     prefetch = (
-        "beatmaps",
-        "beatmaps__beatmapset_metadata",
-        "beatmaps__beatmap_metadata",
-        "beatmaps__mods"
+        "beatmap_connections",
+        "beatmap_connections__beatmap",
+        "beatmap_connections__beatmap__beatmapset_metadata",
+        "beatmap_connections__beatmap__beatmap_metadata",
+        "beatmap_connections__beatmap__mods"
     )
 
     try:
@@ -148,7 +149,7 @@ async def mappools(req, mappool_id=None):
                 "id": IntegerType(minimum=0),
                 "slot": StringType(range(1, 24)),
                 "mods": ListType(
-                    StringType(range(2, 3),options=VALID_MODS),
+                    StringType(range(2, 3), options=VALID_MODS),
                     unique=True,
                     unique_check=lambda a, b: a.upper() != b.upper()
                 )
@@ -166,7 +167,7 @@ async def create_mappool(req, data):
     mods = []
     for bm_id, slot, bm_mods in map(lambda bm: (bm["id"], bm["slot"], bm["mods"]), data["beatmaps"]):
         beatmap_ids.append(bm_id)
-        slots.append(slot)
+        slots.append(slot.upper())
         mods.append(bm_mods)
 
     user = await req.auser()
@@ -180,7 +181,7 @@ async def create_mappool(req, data):
         if mappool.submitted_by_id != user.id:
             return error("Cannot edit a mappool not submitted by you", 403)
 
-    mappool = await Mappool.new(data["name"], user, beatmap_ids, slots, mods, mappool_id=data["id"] or 0)
+    mappool = await Mappool.new(data["name"], user, beatmap_ids, slots, mods, mappool_id=data.get("id") or 0)
 
     serializer = MappoolSerializer(mappool)
     return JsonResponse(serializer.serialize(), safe=False)

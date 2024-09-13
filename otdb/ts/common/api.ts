@@ -9,14 +9,14 @@ export interface User {
     username: string;
     avatar: string;
     cover: string;
-};
+}
 
 export interface BeatmapsetMetadata {
     id: number;
     artist: string;
     title: string;
     creator: string;
-};
+}
 
 export interface BeatmapMetadata {
     id: number;
@@ -27,20 +27,24 @@ export interface BeatmapMetadata {
     hp: number;
     length: number;
     bpm: number;
-};
+}
 
 export interface Mod {
     acronym: string;
     settings: Object | null;
-};
+}
 
 export interface MappoolBeatmap {
     beatmapset_metadata: BeatmapsetMetadata;
     beatmap_metadata: BeatmapMetadata;
-    slot: string;
-    mods: Array<Mod>;
+    mods: Mod[];
     star_rating: number;
-};
+}
+
+export interface MappoolBeatmapConnection {
+    slot: string;
+    beatmap: MappoolBeatmap;
+}
 
 export interface Mappool {
     id: number;
@@ -50,10 +54,10 @@ export interface Mappool {
 }
 
 export interface MappoolExtended extends Mappool {
-    beatmaps: Array<MappoolBeatmap>;
+    beatmap_connections: MappoolBeatmapConnection[];
     submitted_by: User;
     is_favorited?: boolean;
-};
+}
 
 export interface MappoolWithFavorites extends Mappool {
     favorite_count: number;
@@ -68,13 +72,13 @@ export interface MappoolBeatmapPayload {
     id: number;
     slot: string;
     mods: ValidMod[];
-};
+}
 
 export interface MappoolPayload {
     id?: number;
     name: string;
-    beatmaps: Array<MappoolBeatmapPayload>;
-};
+    beatmaps: MappoolBeatmapPayload[];
+}
 
 export interface SessionData {
     user: User | null;

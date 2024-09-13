@@ -33,7 +33,7 @@ class Serializer:
                 return serializer
         raise NotImplementedError(f"Could not find serializer for {model}")
 
-    def _transform(self, obj, fields, exclude, include):
+    def _transform(self, obj, fields, exclude: dict[str, set], include: dict[str, set]):
         data = {}
         for field in fields:
             field_type = getattr(self.model, field, None)
@@ -45,30 +45,30 @@ class Serializer:
             if isinstance(field_type, ForwardManyToOneDescriptor):
                 serializer = self._get_serializer_of_obj(value)
                 data[json_name] = serializer(value).serialize(
-                    exclude.get(field, [])+serializer.excludes,
+                    list(exclude.get(field, []))+serializer.excludes,
                     include.get(field)
                 )
             elif isinstance(field_type, ReverseManyToOneDescriptor):
                 serializer = self._get_serializer_of_model(value.model)
                 data[json_name] = serializer(value.all(), many=True).serialize(
-                    exclude.get(field, [])+serializer.excludes,
+                    list(exclude.get(field, []))+serializer.excludes,
                     include.get(field)
                 )
             else:
                 data[json_name] = value
         return data
 
-    def _separate_field_args(self, fields, include_parents):
-        now = []
-        later = defaultdict(list)
+    def _separate_field_args(self, fields: Iterable[str], include_parents):
+        now = set()
+        later = defaultdict(set)
         for field in fields:
             if "__" in field:
-                split_field = field.split("__", 2)
-                later[split_field[0]].append(split_field[1])
+                split_field = field.split("__", 1)
+                later[split_field[0]].add(split_field[1])
                 if include_parents:
-                    now.append(split_field[0])
+                    now.add(split_field[0])
             else:
-                now.append(field)
+                now.add(field)
         return now, later
 
     def serialize(self, exclude=None, include=None):
@@ -131,7 +131,12 @@ class BeatmapModSerializer(metaclass=SerializerMeta):
 
 class MappoolBeatmapSerializer(metaclass=SerializerMeta):
     model = MappoolBeatmap
-    fields = ["slot", "mods", "star_rating"]
+    fields = ["mods", "star_rating"]
+
+
+class MappoolBeatmapConnectionSerializer(metaclass=SerializerMeta):
+    model = MappoolBeatmapConnection
+    fields = ["slot"]
 
 
 class OsuUserSerializer(metaclass=SerializerMeta):

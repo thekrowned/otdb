@@ -39,14 +39,14 @@ export function mappoolFormSetup(editing: boolean) {
     const beatmapSection: HTMLElement = getElementByIdOrThrow("beatmap-section");
     const quickAddContainer = getElementByIdOrThrow("quick-add-container");
 
-    var idIncrement = 1;
+    let idIncrement = 1;
 
-    function onOpenQuickAdd(evt: MouseEvent) {
+    function onOpenQuickAdd() {
         manager.backdrop.show();
         quickAddContainer.classList.remove("hidden");
     }
     
-    function onCloseQuickAdd(evt: MouseEvent | null = null) {
+    function onCloseQuickAdd() {
         manager.backdrop.hide();
         quickAddContainer.classList.add("hidden");
     }
@@ -57,7 +57,7 @@ export function mappoolFormSetup(editing: boolean) {
         }
     }
     
-    function onQuickAddBeatmaps(evt: MouseEvent) {
+    function onQuickAddBeatmaps() {
         deleteCurrentInputs();
 
         const beatmapIds = quickAddBeatmapsInput.getValue().split("\n");
@@ -86,7 +86,7 @@ export function mappoolFormSetup(editing: boolean) {
         onCloseQuickAdd();
     }
 
-    function onSubmitBeatmaps(evt: MouseEvent) {
+    function onSubmitBeatmaps() {
         manager.inputs.submit.disable();
         document.body.style.cursor = "wait";
     
@@ -142,7 +142,7 @@ export function mappoolFormSetup(editing: boolean) {
             danger: true,
             square: true
         }, inputContainer);
-        removeBtn.addCallback((evt) => {
+        removeBtn.addCallback(() => {
             manager.inputs.remove(beatmapIdInput.id);
             manager.inputs.remove(slotInput.id);
             manager.inputs.remove(modsInput.id);
@@ -157,7 +157,7 @@ export function mappoolFormSetup(editing: boolean) {
         return {id: beatmapIdInput, slot: slotInput, mods: modsInput};
     }
 
-    addBeatmapBtn.addCallback((evt: MouseEvent) => addBeatmap());
+    addBeatmapBtn.addCallback(() => addBeatmap());
     openQuickAddBtn.addCallback(onOpenQuickAdd);
     quickAddBeatmapsBtn.addCallback(onQuickAddBeatmaps);
     manager.inputs.submit.addCallback(onSubmitBeatmaps);
@@ -170,9 +170,11 @@ export function mappoolFormSetup(editing: boolean) {
     } else {
         mappoolData = JSON.parse(getElementByIdOrThrow("mappool-data").innerText) as MappoolExtended;
         nameInput.setValue(mappoolData.name);
-        for (const beatmap of mappoolData.beatmaps) {
+        for (const connection of mappoolData.beatmap_connections) {
+            const beatmap = connection.beatmap;
+
             const bmInputs = addBeatmap();
-            bmInputs.slot.setValue(beatmap.slot);
+            bmInputs.slot.setValue(connection.slot);
             bmInputs.id.setValue(beatmap.beatmap_metadata.id.toString());
             for (const mod of beatmap.mods) {
                 for (const item of bmInputs.mods.items) {

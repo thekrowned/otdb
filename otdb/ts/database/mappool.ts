@@ -1,6 +1,6 @@
 import { getElementByIdOrThrow, formatLength } from "../common/util";
 import { ElementsManager } from "../common/elements";
-import { BeatmapsetMetadata, MappoolExtended, MappoolBeatmap } from "../common/api";
+import {BeatmapsetMetadata, MappoolExtended, MappoolBeatmap, MappoolBeatmapConnection} from "../common/api";
 import { getStarRatingColor } from "../common/util";
 import { setHoldClick } from "../common/interactions";
 
@@ -218,13 +218,16 @@ function createMetadataContainer(metadata: BeatmapsetMetadata): HTMLDivElement {
     return container;
 }
 
-function createBeatmapCover(beatmap: MappoolBeatmap): HTMLDivElement {
+function createBeatmapCover(bmSlot: string, beatmapsetId: number): HTMLDivElement {
     const wrapper = document.createElement("div");
     wrapper.classList.add("beatmap-cover-fade-wrapper");
 
     const banner = document.createElement("img");
     banner.classList.add("beatmap-cover");
-    banner.src = `https://assets.ppy.sh/beatmaps/${beatmap.beatmapset_metadata.id}/covers/cover.jpg`;
+    banner.src = `https://assets.ppy.sh/beatmaps/${beatmapsetId}/covers/cover.jpg`;
+    banner.alt = "";
+    // set to a singular pixel image
+    banner.addEventListener("error", () => {banner.src = "data:image/jpg;base64,/9j/4AAQSkZJRgABAQEBLAEsAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wgARCAABAAEDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAAAf/EABQBAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhADEAAAAQ//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAEFAn//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/AX//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/AX//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAY/An//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/IX//2gAMAwEAAgADAAAAEB//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/EH//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/EH//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/EH//2Q==";});
     wrapper.appendChild(banner);
 
     const fade = document.createElement("div");
@@ -233,7 +236,7 @@ function createBeatmapCover(beatmap: MappoolBeatmap): HTMLDivElement {
 
     const slot = document.createElement("p");
     slot.classList.add("modification");
-    slot.innerHTML = beatmap.slot;
+    slot.innerHTML = bmSlot;
     fade.appendChild(slot);
 
     return wrapper;
@@ -255,8 +258,8 @@ export function mappoolSetup() {
 
     const SLOT_ORDER = ["NM", "HD", "HR", "DT", "FM", "EZ", "HT", "*", "TB"];
 
-    var favoriteDebounce = false;
-    var deleteDebounce = false;
+    let favoriteDebounce = false;
+    let deleteDebounce = false;
 
     function favoriteMappool() {
         if (favoriteDebounce) return;
@@ -286,8 +289,10 @@ export function mappoolSetup() {
         });
     }
 
-    function createBeatmap(beatmap: MappoolBeatmap): HTMLAnchorElement {
-        const slotColor = getSlotColor(beatmap.slot);
+    function createBeatmap(connection: MappoolBeatmapConnection): HTMLAnchorElement {
+        const beatmap = connection.beatmap;
+
+        const slotColor = getSlotColor(connection.slot);
         const ratingColor = getStarRatingColor(beatmap.star_rating);
     
         const wrapping = document.createElement("a");
@@ -309,8 +314,8 @@ export function mappoolSetup() {
         container.classList.add("beatmap");
         container.style.backgroundImage = `linear-gradient(to left, ${ratingColor} 150px, rgba(0, 0, 0, 0.3) 150px, rgba(0, 0, 0, 0.3))`;
         wrapping.appendChild(container);
-    
-        container.appendChild(createBeatmapCover(beatmap));
+
+        container.appendChild(createBeatmapCover(connection.slot, beatmap.beatmapset_metadata.id));
         container.appendChild(createMetadataContainer(beatmap.beatmapset_metadata));
         const diffContainer = createDifficultyContainer(beatmap);
         container.appendChild(diffContainer);
@@ -350,14 +355,14 @@ export function mappoolSetup() {
     
         mappoolName.innerHTML = data.name;
     
-        const abcSortedBeatmaps = data.beatmaps.sort((a, b) => a.slot.charCodeAt(0) - b.slot.charCodeAt(0));
+        const abcSortedBeatmaps = data.beatmap_connections.sort((a, b) => a.slot.charCodeAt(0) - b.slot.charCodeAt(0));
         const getSlotOrderIndex = (a) => {
             const mod = a.slot.substring(0, 2).toUpperCase();
             const order = SLOT_ORDER.indexOf(mod);
             return order === -1 ? SLOT_ORDER.indexOf("*") : order;
         };
-        for (const beatmap of abcSortedBeatmaps.sort((a, b) => getSlotOrderIndex(a) - getSlotOrderIndex(b))) {
-            mappoolContainer.appendChild(createBeatmap(beatmap));
+        for (const connection of abcSortedBeatmaps.sort((a, b) => getSlotOrderIndex(a) - getSlotOrderIndex(b))) {
+            mappoolContainer.appendChild(createBeatmap(connection));
         }
     }
 
