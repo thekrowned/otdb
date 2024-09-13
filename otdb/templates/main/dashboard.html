@@ -1,2 +1,14 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Dashboard{% endblock title %}
+{% block body %}
+<div class="page-container">
+    <div class="interaction-container">
+        <div id="logout-btn" class="clickable hazard">Logout</div>
+    </div>
+</div>
+<script type="module">
+    import { dashboardSetup } from "{% static 'js/bundled.js' %}";
+    dashboardSetup();
+</script>
+{% endblock body %}
