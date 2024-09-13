@@ -15,7 +15,7 @@ async def index(req):
     return await render(req, "main/index.html")
 
 
-async def authenticate(req):
+async def login_view(req):
     try:
         code = req.GET.get("code", None)
         if code is not None:
@@ -28,7 +28,7 @@ async def authenticate(req):
         return HttpResponseBadRequest()
 
 
-async def unauthenticate(req):
+async def logout_view(req):
     user = await req.auser()
     if user.is_authenticated:
         await alogout(req)
@@ -40,3 +40,7 @@ async def dashboard(req):
     if not user.is_authenticated:
         return redirect("index")
     return await render(req, "main/dashboard.html")
+
+
+async def user(req, id=None):
+    return await render(req, "main/user.html")
