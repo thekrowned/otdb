@@ -348,6 +348,11 @@ class TournamentInvolvement(models.Model):
     user = models.ForeignKey(OsuUser, on_delete=models.CASCADE)
     roles = UserRolesField(default=0)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tournament", "user"], name="tournamentinvolvement_unique_constraint")
+        ]
+
 
 class MappoolConnection(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name="mappool_connections")
