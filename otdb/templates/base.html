@@ -28,23 +28,36 @@
             </div>
             <div class="empty-header-item"></div>
             {% if user.is_authenticated %}
-            <a href="{% url 'dashboard' %}"><img class="login-avatar" src="{{ user.avatar }}"></a>
+            <img id="login-avatar" src="{{ user.avatar }}">
             {% else %}
             <a href="{{ auth_url }}"><div class="login-container">Login</div></a>
             {% endif %}
         </div>
+
+        <div id="login-dropdown">
+            <div id="dashboard-item" class="login-dropdown-item">Dashboard</div>
+            <div id="profile-item" class="login-dropdown-item">Profile</div>
+        </div>
+
         <div id="actual-body">
             {% block body %}{% endblock body %}
         </div>
+
         <div id="backdrop" class="prevent-select hide"></div>
         <div id="event-container"></div>
         <div id="popup" class="hidden">
             <p>Popup prompt</p>
         </div>
+
         <footer>
             <div class="footer">
                 <p>Created by sheppsu</p>
             </div>
         </footer>
+
+        <script type="module">
+            import { baseSetup } from "{% static 'js/bundled.js' %}";
+            baseSetup();
+        </script>
     </body>
 </html>

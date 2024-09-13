@@ -128,7 +128,7 @@ hr {
     background-color: var(--hover-bg-color2);
 }
 
-.login-avatar {
+#login-avatar {
     width: 40px;
     height: 40px;
     margin-top: 5px;
@@ -137,13 +137,45 @@ hr {
     border-radius: 40px;
 }
 
-.login-avatar:hover {
+#login-avatar:hover {
     margin-top: 2px;
     margin-right: 7px;
 
     border: 3px solid white;
 
     cursor: pointer;
+}
+
+#login-dropdown {
+    padding: 10px 0;
+
+    position: absolute;
+    right: 10px;
+    top: -50px;
+
+    display: flex;
+    flex-direction: column;
+
+    background-color: var(--bg-color2);
+    border-radius: 0 0 10px 10px;
+
+    font-size: 15px;
+    color: white;
+
+    transition: top 0.5s;
+}
+
+#login-dropdown.active {
+    top: 50px;
+}
+
+.login-dropdown-item {
+    padding: 5px;
+}
+
+.login-dropdown-item:hover {
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.3);
 }
 
 /* footer */
@@ -196,7 +228,7 @@ footer {
 
 .sub-section-label {
     margin: 2px 0;
-    font-size: 24;
+    font-size: 24px;
 }
 
 .prevent-select {
