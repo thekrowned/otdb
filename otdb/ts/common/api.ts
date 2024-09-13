@@ -308,4 +308,13 @@ export class APIManager {
             credentials: "include"
         });
     }
+
+    /**
+     * Get a user by id
+     *
+     * @param id - user's id
+     */
+    public async getUser(id: number): Promise<User | undefined> {
+        return await this.req(`users/${id}/`);
+    }
 }
