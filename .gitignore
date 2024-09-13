@@ -9,6 +9,7 @@ otdb/ts/node_modules/
 otdb/static/js/
 *.pyc
 *.sqlite3
+bundled.css
 
 # development files
 test.py
