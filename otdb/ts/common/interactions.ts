@@ -1,6 +1,6 @@
 export function setHoldClick(element: HTMLElement, callback: () => void) {
-    var progressInterval: undefined | number = undefined;
-    var progress = 0;
+    let progressInterval: undefined | number = undefined;
+    let progress = 0;
 
     function startProgress() {
         stopProgress();

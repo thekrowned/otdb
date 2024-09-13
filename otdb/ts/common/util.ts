@@ -1,9 +1,9 @@
-export function getElementByIdOrThrow(id: string): HTMLElement {
+export function getElementByIdOrThrow<T extends HTMLElement>(id: string): T {
     const elm = document.getElementById(id);
     if (elm == null) {
         throw new Error(`Could not find element with id ${id}`);
     }
-    return elm;
+    return elm as T;
 }
 
 export function querySelectorOrThrow(base: Document | Element, pattern: string): Element {

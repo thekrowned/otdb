@@ -16,7 +16,6 @@ def requires_login(func):
 
 
 async def mappools(req, id=None):
-    await api_views.search_mappools(req)
     if id is not None:
         return await render(req, "database/mappool.html")
     return await render(req, "database/mappools.html")
