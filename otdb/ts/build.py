@@ -16,8 +16,10 @@ DEBUG = "--debug" in sys.argv
 
 
 def fix_imports_for(outfile, path, context):
+    comment = f"/* {os.path.split(path)[1]}: %4d */ "
+
     with open(path, "r", encoding="utf-8") as f:
-        for line in f.readlines():
+        for i, line in enumerate(f.readlines()):
             if line.startswith("const") or line.startswith("var") or line.startswith("let"):
                 var = line.split(" ", 3)[1]
                 if var in context["variables"]:
@@ -27,9 +29,9 @@ def fix_imports_for(outfile, path, context):
             if "import" in line and "http" not in line:
                 continue
             if line.startswith("export") and not line.split("(", 2)[0].endswith("Setup"):
-                outfile.write(line[15 if "default" in line else 7:])
+                outfile.write((comment % (i + 1))+line[15 if "default" in line else 7:])
             else:
-                outfile.write(line)
+                outfile.write((comment % (i + 1))+line)
 
 
 def bundle(outfile):
@@ -37,11 +39,29 @@ def bundle(outfile):
         "variables": []
     }
 
-    for root, _, files in os.walk(JS_DIR):
+    def bundle_js(root, files):
         for file in files:
-            if file.endswith(".js"):
+            if file.endswith(".js") and not file.startswith("bundled"):
                 fix_imports_for(outfile, os.path.join(root, file), context)
 
+    # first bundle core js
+    bundle_js(JS_DIR, (file for file in os.listdir(JS_DIR) if file != "base.js"))
+
+    # next bundle commonly utilized js
+    for root, _, files in os.walk(os.path.join(JS_DIR, "common")):
+        bundle_js(root, files)
+
+    # now the base.js can be bundled
+    bundle_js(JS_DIR, ["base.js"])
+
+    # bundle everything else
+    for root, _, files in os.walk(JS_DIR):
+        pardir = os.path.split(root)[1]
+        if pardir == "common" or pardir == "js":
+            continue
+        bundle_js(root, files)
+
+    # very big nest :P just puts all the css in one file
     with open(BUNDLED_CSS, "w") as outf:
         for root, _, files in os.walk(CSS_DIR):
             for file in files:
