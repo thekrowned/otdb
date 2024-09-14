@@ -231,7 +231,7 @@ class Mappool(models.Model):
 
         max_mods = sorted(map(len, mods))[-1]
         # not using gather as to not barrage the site
-        data = asyncio.gather(*(
+        data = await asyncio.gather(*(
             MappoolBeatmap.get_rows_data(
                 beatmaps[i],
                 tuple(map(str.upper, mods[i])) + tuple((None for _ in range(max_mods - len(mods[i]))))
