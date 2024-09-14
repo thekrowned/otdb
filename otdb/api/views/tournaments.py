@@ -60,7 +60,7 @@ async def tournaments(req, id=None):
             error("invalid tournament id", 404)
 
     tournament_list = await get_listing_from_params(Tournament, req)
-    total = await Mappool.objects.acount()
+    total = await Tournament.objects.acount()
 
     return JsonResponse({
         "data": TournamentSerializer(
