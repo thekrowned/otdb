@@ -104,7 +104,7 @@ FOR n_i IN 1 .. array_length(r_mpbm, 1) LOOP
 	    b_mpbm_exists := true;
 
 	    -- If both mappoolbeatmaps have no mods
-	    IF array_length(r_bm_mods, 2) == 0 AND (SELECT COUNT(*) FROM database_mappoolbeatmap_mods WHERE mappoolbeatmap_id = r_tmp_mpbm.id) = 0 THEN
+	    IF array_length(r_bm_mods, 2) = 0 AND (SELECT COUNT(*) FROM database_mappoolbeatmap_mods WHERE mappoolbeatmap_id = r_tmp_mpbm.id) = 0 THEN
 	        b_mpbm_exists := true;
 	    ELSE
 	        -- Check that mods on both mappoolbeatmap rows match
@@ -132,6 +132,7 @@ FOR n_i IN 1 .. array_length(r_mpbm, 1) LOOP
         END IF;
 
 	    IF b_mpbm_exists = true THEN
+	        n_mb_id := r_tmp_mpbm.id;
             EXIT;
         END IF;
     END LOOP;
