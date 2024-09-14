@@ -14,7 +14,6 @@ __all__ = (
     
     "tournaments",
     "favorite_tournament",
-    "search_tournaments"
 )
 
 
@@ -59,7 +58,11 @@ async def tournaments(req, id=None):
         return JsonResponse(tournament, safe=False) if tournament is not None else \
             error("invalid tournament id", 404)
 
-    tournament_list = await get_listing_from_params(Tournament, req)
+    tournament_list = await get_listing_from_params(
+        Tournament,
+        ("name", "abbreviation", "description"),
+        req
+    )
     total = await Tournament.objects.acount()
 
     return JsonResponse({
@@ -162,18 +165,3 @@ async def favorite_tournament(req, tournament_id, data):
         await favorite.adelete()
 
     return HttpResponse(b"", 200)
-
-
-@require_method("GET")
-async def search_tournaments(req):
-    def search(req):
-        return list(Tournament.objects.annotate(
-            search=SearchVector(
-                "name",
-                "abbreviation",
-                "description"
-            )
-        ).filter(search=SearchQuery(req.GET.get("q", "test")))[:20])
-    
-    result = await sync_to_async(search)(req)
-    return JsonResponse(TournamentSerializer(result, many=True).serialize(), safe=False)

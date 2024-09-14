@@ -17,9 +17,10 @@ function createMappoolItem(mappool: MappoolWithFavorites) {
 }
 
 export function mappoolsSetup() {
-    const query = new URLSearchParams(window.location.search);
-    let sort: string = query.get("s") ?? "recent";
-    let page: number = parseInt(query.get("p") ?? "1");
+    const params = new URLSearchParams(window.location.search);
+    let sort: string = params.get("s") ?? "recent";
+    let page: number = parseInt(params.get("p") ?? "1");
+    let query: string = params.get("q") ?? "";
     let currentSortElm = null;
 
     const mappoolContainer = getElementByIdOrThrow("mappools-container");
@@ -30,7 +31,7 @@ export function mappoolsSetup() {
         removeChildren(mappoolContainer);
         loadingText.classList.remove("hidden");
     
-        manager.api.getMappools(page, sort as MappoolSortType).then((resp) => {
+        manager.api.getMappools(page, sort as MappoolSortType, query).then((resp) => {
             loadingText.classList.add("hidden");
     
             if (resp === undefined) {
@@ -45,7 +46,7 @@ export function mappoolsSetup() {
 
     function reloadPage(evt: MouseEvent) {
         page = onPageClick(evt, page);
-        loadPage()
+        loadPage();
     }
     
     function switchSort(elm) {
@@ -57,7 +58,7 @@ export function mappoolsSetup() {
 
         elm.classList.add("active");
         currentSortElm = elm;
-        window.history.replaceState({ s: sort, p: page }, document.title, `?s=${sort}&p=${page}`)
+        window.history.replaceState({ s: sort, p: page }, document.title, `?s=${sort}&p=${page}&q=${query}`);
         loadPage();
     }
 

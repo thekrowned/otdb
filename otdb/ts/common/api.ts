@@ -209,10 +209,11 @@ export class APIManager {
      * 
      * @param page - page to index
      * @param sort - sort to index by
+     * @param query - string query to search with
      * @returns mappools and total pages if success, otherwise undefined
      */
-    public async getMappools(page: number, sort: MappoolSortType): Promise<MappoolsResponse | undefined> {
-        return await this.req(`mappools/?s=${sort}&p=${page}`);
+    public async getMappools(page: number, sort: MappoolSortType, query: string): Promise<MappoolsResponse | undefined> {
+        return await this.req(`mappools/?s=${sort}&p=${page}&q=${query}`);
     }
 
     /**
