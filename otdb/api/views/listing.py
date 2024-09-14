@@ -22,18 +22,18 @@ def get_listing(model: _T, page: int, sort: str, **annotations) -> list[_T]:
 
 
 async def get_recent_listing(model: _T, page: int) -> list[_T]:
-    return await sync_to_async(get_listing)(model, page, "id")
+    return await sync_to_async(get_listing)(model, page, "-id")
 
 
 async def get_favorites_listing(model: _T, page: int) -> list[_T]:
-    return await sync_to_async(get_listing)(model, page, "favorite_count")
+    return await sync_to_async(get_listing)(model, page, "-favorite_count")
 
 
 async def get_trending_listing(model: _T, page: int) -> list[_T]:
     return await sync_to_async(get_listing)(
         model,
         page,
-        "recent_favorites",
+        "-recent_favorites",
         recent_favorites=models.Count(
             "favorite_connections",
             filter=models.Q(favorite_connections__timestamp__gt=time.time() // 1 - 604800)
