@@ -3,7 +3,7 @@ import jsx from "../jsxFactory";
 export function createListingItem(id: number, title: string, favoriteCount: number, dbName: string, extra: null | string = null) {
     return (
         <div class="listing-item-container">
-            <a href={`/db/${dbName}/${id}`}>
+            <a href={`/db/${dbName}/${id}`} style="flex-grow: 1;">
                 <p class="listing-item-title">{title}</p>
             </a>
             <hr></hr>
