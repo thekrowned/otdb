@@ -2,13 +2,13 @@ def sql_s(s: str):
     return "'" + s.replace("'", "''") + "'"
 
 
-def unzip(iterable):
+def unzip(seq):
     """Only works if each map object is consumed before grabbing the next"""
-    if len(iterable) == 0:
+    if len(seq) == 0:
         return
 
-    for i in range(len(iterable[0])):
-        yield map(lambda item: item[i], iterable)
+    for i in range(len(seq[0])):
+        yield map(lambda item: item[i], seq)
 
 
 def find_invalids(valid_items, sus_items, cmp):
