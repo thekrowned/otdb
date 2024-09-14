@@ -272,7 +272,13 @@ class Tournament(models.Model):
         tournament_id: int = 0
     ):
         user_rows = (f"ROW({u[0]},{sql_s(u[1])},{sql_s(u[2])},{sql_s(u[3])},0)::main_osuuser" for u in users)
-        mappool_rows = (f"ROW(0,{sql_s(conn['name_override'] or "null")},{conn['id']},0)::database_mappoolconnection" for conn in mappools)
+        mappool_rows = (
+            (
+                f"ROW(0,{"null" if conn["name_override"] is None else sql_s(conn['name_override'])},"
+                f"{conn['id']},0)::database_mappoolconnection"
+            )
+            for conn in mappools
+        )
 
         with connection.cursor() as cursor:
             cursor.execute("SELECT \"new_tournament\"(%d, %s, %s, %s, %s, %d, %s, %s, %s)" % (
