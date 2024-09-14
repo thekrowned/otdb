@@ -18,9 +18,9 @@ function createMappoolItem(mappool: MappoolWithFavorites) {
 
 export function mappoolsSetup() {
     const query = new URLSearchParams(window.location.search);
-    var sort: string = query.get("s") ?? "recent";
-    var page: number = parseInt(query.get("p") ?? "1");
-    var currentSortElm = null;
+    let sort: string = query.get("s") ?? "recent";
+    let page: number = parseInt(query.get("p") ?? "1");
+    let currentSortElm = null;
 
     const mappoolContainer = getElementByIdOrThrow("mappools-container");
 
@@ -39,7 +39,7 @@ export function mappoolsSetup() {
             }
             
             mappoolContainer.append(...resp.data.map(createMappoolItem));
-            createPageNavigator(1, resp.total_pages, reloadPage);
+            createPageNavigator(page, resp.total_pages, reloadPage);
         });
     }
 
