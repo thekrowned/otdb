@@ -11,6 +11,10 @@ export interface User {
     cover: string;
 }
 
+export interface UserExtended extends User {
+    staff_roles: UserTournamentInvolvement[];
+}
+
 export interface BeatmapsetMetadata {
     id: number;
     artist: string;
@@ -95,7 +99,14 @@ export interface Tournament {
 
 export interface TournamentInvolvement {
     roles: number;
+}
+
+export interface TournamentInvolvementExtended extends TournamentInvolvement {
     user: User;
+}
+
+export interface UserTournamentInvolvement extends TournamentInvolvement {
+    tournament: TournamentWithFavorites;
 }
 
 export interface MappoolConnection {
@@ -105,8 +116,7 @@ export interface MappoolConnection {
 }
 
 export interface TournamentExtended extends Tournament {
-    staff: TournamentInvolvement[];
-    mappools: Mappool;
+    staff: TournamentInvolvementExtended[];
     submitted_by: User;
     mappool_connections: MappoolConnection[];
     is_favorited?: boolean;
@@ -314,7 +324,7 @@ export class APIManager {
      *
      * @param id - user's id
      */
-    public async getUser(id: number): Promise<User | undefined> {
+    public async getUser(id: number): Promise<UserExtended | undefined> {
         return await this.req(`users/${id}/`);
     }
 }

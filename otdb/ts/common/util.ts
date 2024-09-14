@@ -1,3 +1,5 @@
+import {VALID_ROLES} from "./constants";
+
 export function getElementByIdOrThrow<T extends HTMLElement>(id: string): T {
     const elm = document.getElementById(id);
     if (elm == null) {
@@ -73,5 +75,12 @@ export function getStarRatingColor(rating: number): string {
         if (rating < ratingRange[i]) {
             return interpolate(colorRange[i-1], colorRange[i])((rating - ratingRange[i-1]) / (ratingRange[i] - ratingRange[i-1]));
         }
+    }
+}
+
+export function * parseRolesFlag(flag: number): Generator<string> {
+    for (let i=0; i<VALID_ROLES.length; i++) {
+        if (flag & (1 << i))
+            yield VALID_ROLES[i];
     }
 }

@@ -1,0 +1,28 @@
+.user-info-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-info-avatar {
+    width: 70px;
+    height: 70px;
+
+    border-radius: 5px;
+}
+
+.user-info-username {
+    font-size: 40px;
+    color: white;
+}
+
+.user-roles-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-external-link {
+    width: 30px;
+    height: 30px;
+}

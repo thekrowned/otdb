@@ -84,6 +84,7 @@ class UserRoles(IntFlag):
     SHEETER = 1 << 7
     HOST = 1 << 8
     GRAPHICS = 1 << 9
+    ADMIN = 1 << 10
 
 
 @enum_field(UserRoles, models.PositiveIntegerField)
@@ -345,7 +346,7 @@ class Tournament(models.Model):
 
 class TournamentInvolvement(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name="involvements")
-    user = models.ForeignKey(OsuUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(OsuUser, on_delete=models.CASCADE, related_name="involvements")
     roles = UserRolesField(default=0)
 
     class Meta:
@@ -364,12 +365,12 @@ class MappoolConnection(models.Model):
 
 
 class MappoolFavorite(models.Model):
-    mappool = models.ForeignKey(Mappool, models.CASCADE)
+    mappool = models.ForeignKey(Mappool, models.CASCADE, related_name="favorite_connections")
     user = models.ForeignKey(OsuUser, models.CASCADE)
     timestamp = models.PositiveBigIntegerField()
 
 
 class TournamentFavorite(models.Model):
-    tournament = models.ForeignKey(Tournament, models.CASCADE)
+    tournament = models.ForeignKey(Tournament, models.CASCADE, related_name="favorite_connections")
     user = models.ForeignKey(OsuUser, models.CASCADE)
     timestamp = models.PositiveBigIntegerField()

@@ -4,7 +4,7 @@ from django.contrib.postgres.search import SearchVector, SearchQuery
 from ..serializers import *
 from .util import *
 from common.validation import *
-from .mappools import get_mappools_with_favorites
+from .listing import get_listing_from_params
 
 import time
 
@@ -17,95 +17,26 @@ __all__ = (
     "search_tournaments"
 )
 
-TOURNAMENTS_PER_PAGE = 20
-
-
-def _get_tournaments_with_favorites(page: int, order_by, where: str | None = None) -> list[Tournament]:
-    offset = TOURNAMENTS_PER_PAGE * (page - 1)
-    limit = TOURNAMENTS_PER_PAGE
-    with connection.cursor() as cursor:
-        if where is None:
-            cursor.execute(f"""
-                SELECT id, name, submitted_by_id,
-                CASE WHEN favorites.cnt IS NULL THEN 0 ELSE favorites.cnt END AS favorite_cnt
-                FROM database_tournament
-                LEFT JOIN (
-                    SELECT tournament_id, COUNT(*) AS cnt FROM database_tournamentfavorite
-                    GROUP BY tournament_id
-                ) favorites ON (favorites.tournament_id = database_tournament.id)
-                ORDER BY {order_by} DESC
-                LIMIT {limit} OFFSET {offset}
-            """)
-        else:
-            cursor.execute(f"""
-                SELECT id, name, submitted_by_id,
-                CASE WHEN all_favorites IS NULL THEN 0 ELSE all_favorites.cnt END AS all_favorites_cnt,
-                CASE WHEN favorites.cnt IS NULL THEN 0 ELSE favorites.cnt END AS favorite_cnt
-                FROM database_tournament
-                LEFT JOIN (
-                    SELECT tournament_id, COUNT(*) AS cnt FROM database_tournamentfavorite
-                    {'' if where is None else 'WHERE ' + where}
-                    GROUP BY tournament_id
-                ) favorites ON (favorites.tournament_id = database_tournament.id)
-                LEFT JOIN (
-                    SELECT tournament_id, COUNT(*) AS cnt FROM database_tournamentfavorite
-                    GROUP BY tournament_id
-                ) all_favorites ON (all_favorites.tournament_id = database_tournament.id)
-                ORDER BY {order_by} DESC
-                LIMIT {limit} OFFSET {offset}
-            """)
-        data = cursor.fetchall()
-
-    tournament_list = []
-    for tournament in data:
-        obj = Tournament(id=tournament[0], name=tournament[1], submitted_by_id=tournament[2])
-        obj.favorite_count = tournament[3]
-        tournament_list.append(obj)
-
-    return tournament_list
-
-
-async def get_tournaments_with_favorites(page: int, order_by, where: str | None = None) -> list[Tournament]:
-    return await sync_to_async(_get_tournaments_with_favorites)(page, order_by, where)
-
-
-async def get_recent_tournaments(page) -> list[Tournament]:
-    return await get_tournaments_with_favorites(page, "id")
-
-
-async def get_favorite_tournaments(page) -> list[Tournament]:
-    return await get_tournaments_with_favorites(page, "favorite_cnt")
-
-
-async def get_trending_tournaments(page) -> list[Tournament]:
-    week_ago = time.time() // 1 - 604800
-    return await get_tournaments_with_favorites(page, "all_favorites_cnt", f"timestamp > {week_ago}")
-
 
 async def get_full_tournament(user, id):
     try:
-        tournament = await Tournament.objects\
-            .prefetch_related("involvements__user", "mappools", "mappool_connections")\
-            .select_related("submitted_by")\
-            .aget(id=id)
+        tournament = await Tournament.objects.prefetch_related(
+            "involvements__user",
+            "mappool_connections",
+            models.Prefetch(
+                "mappool_connections__mappool",
+                queryset=Mappool.objects.annotate(
+                    favorite_count=models.Count("favorite_connections")
+                )
+            ),
+        ).select_related("submitted_by").aget(id=id)
     except Tournament.DoesNotExist:
         return
     
     data = TournamentSerializer(tournament).serialize(
-        include=["involvements__user", "mappools", "submitted_by", "mappool_connections"],
+        include=["involvements__user", "submitted_by", "mappool_connections__mappool__favorite_count"],
         exclude=["mappool_connections__tournament_id"]
     )
-
-    mappools = await get_mappools_with_favorites(
-        1,
-        "id",
-        "id in (%s)" % ','.join((str(conn["mappool_id"]) for conn in data["mappool_connections"]))
-    )
-    for mappool in MappoolSerializer(mappools, many=True).serialize(include=["favorite_count"]):
-        for conn in data["mappool_connections"]:
-            if conn["mappool_id"] == mappool["id"]:
-                conn["mappool"] = mappool
-                break
     
     if user.is_authenticated:
         data["is_favorited"] = await tournament.is_favorited(user.id)
@@ -127,20 +58,15 @@ async def tournaments(req, id=None):
         tournament = await get_full_tournament(user, id)
         return JsonResponse(tournament, safe=False) if tournament is not None else \
             error("invalid tournament id", 404)
-    
-    sort_options = {
-        "recent": get_recent_tournaments,
-        "favorites": get_favorite_tournaments,
-        "trending": get_trending_tournaments
-    }
-    sort = option_query_param(tuple(sort_options.keys()), "recent")(req.GET.get("s", "recent").lower())
-    page = int_query_param(range(1, 9999999), 1)(req.GET.get("p", 1))
 
-    tournament_list = await sort_options[sort](page)
+    tournament_list = await get_listing_from_params(Tournament, req)
     total = await Mappool.objects.acount()
-    serializer = TournamentSerializer(tournament_list, many=True)
+
     return JsonResponse({
-        "data": serializer.serialize(include=["favorite_count"]),
+        "data": TournamentSerializer(
+            tournament_list,
+            many=True
+        ).serialize(include=["favorite_count"]),
         "total_pages": (total - 1) // 20 + 1
     }, safe=False)
 

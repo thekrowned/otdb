@@ -1,7 +1,7 @@
 import { ElementsManager } from "../common/elements";
 import { TextButton, TextDropdown, TextInput } from "../common/form";
 import { getElementByIdOrThrow } from "../common/util";
-import { VALID_ROLES } from "../common/constants";
+import {ROLES_SORT, VALID_ROLES} from "../common/constants";
 import { TournamentExtended } from "../common/api";
 
 const manager = new ElementsManager();
@@ -68,7 +68,7 @@ export function tournamentFormSetup(editing: boolean) {
         const rolesInput = manager.inputs.create<TextDropdown>(`roles-input-${idIncrement}`, {
             type: "text-dropdown",
             label: "Roles",
-            options: VALID_ROLES,
+            options: ROLES_SORT,
             multi: true
         }, inputContainer);
         rolesInput.resize(300);
@@ -79,7 +79,7 @@ export function tournamentFormSetup(editing: boolean) {
             danger: true,
             square: true
         }, inputContainer);
-        removeBtn.addCallback((evt) => {
+        removeBtn.addCallback(() => {
             manager.inputs.remove(userIdInput.id);
             manager.inputs.remove(rolesInput.id);
             manager.inputs.remove(removeBtn.id);
@@ -121,7 +121,7 @@ export function tournamentFormSetup(editing: boolean) {
             square: true
         }, inputContainer);
 
-        removeBtn.addCallback((evt) => {
+        removeBtn.addCallback(() => {
             manager.inputs.remove(mappoolIdInput.id);
             manager.inputs.remove(nameOverrideInput.id);
             manager.inputs.remove(removeBtn.id);

@@ -162,7 +162,7 @@ hr {
     font-size: 15px;
     color: white;
 
-    transition: top 0.5s;
+    transition: top 0.3s;
 }
 
 #login-dropdown.active {

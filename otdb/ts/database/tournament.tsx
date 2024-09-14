@@ -1,4 +1,10 @@
-import { MappoolConnection, TournamentExtended, TournamentInvolvement, User } from "../common/api";
+import {
+    MappoolConnection,
+    TournamentExtended,
+    TournamentInvolvement,
+    TournamentInvolvementExtended,
+    User
+} from "../common/api";
 import { ElementsManager } from "../common/elements";
 import { getElementByIdOrThrow } from "../common/util";
 import { ROLES_SORT, VALID_ROLES } from "../common/constants";
@@ -70,7 +76,7 @@ export function tournamentSetup() {
             </p>;
     }
 
-    function createStaff(staff: TournamentInvolvement[]) {
+    function createStaff(staff: TournamentInvolvementExtended[]) {
         const staffRoles: {[_: string]: User[]} = {};
         for (const involvement of staff) {
             for (const role of getRoles(involvement.roles)) {
@@ -87,7 +93,7 @@ export function tournamentSetup() {
             container.append(
                 <h1 class="tournament-section-label sub">{role}</h1>,
                 <div class="tournament-staff-container">
-                    {users.map((user) => <a href={`https://osu.ppy.sh/u/${user.id}`} target="_blank">
+                    {users.map((user) => <a href={`/users/${user.id}`}>
                         <div class="tournament-staff">
                             <img class="tournament-staff-avatar" src={user.avatar}></img>
                             {user.username}
@@ -102,7 +108,7 @@ export function tournamentSetup() {
         container.append(
             <h1 class="tournament-section-label">Mappools</h1>,
             <div class="listing-container left">{mappools.map((conn) => createListingItem(
-                conn.mappool_id,
+                conn.mappool.id,
                 conn.name_override ?? conn.mappool.name,
                 conn.mappool.favorite_count,
                 "mappools",

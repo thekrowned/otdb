@@ -2,6 +2,7 @@ from django.contrib.postgres.search import SearchVector, SearchQuery
 
 from ..serializers import *
 from .util import *
+from .listing import get_listing_from_params
 from common.validation import *
 
 import time
@@ -17,72 +18,9 @@ __all__ = (
 
 
 VALID_MODS = ("EZ", "HD", "HR", "DT", "FM", "RX", "HT", "NC", "FL", "AP", "SO")
-MAPPOOLS_PER_PAGE = 20
 
 
-def _get_mappools_with_favorites(page: int, order_by, where: str | None = None) -> list[Mappool]:
-    offset = MAPPOOLS_PER_PAGE * (page - 1)
-    limit = MAPPOOLS_PER_PAGE
-    with connection.cursor() as cursor:
-        if where is None:
-            cursor.execute(f"""
-                SELECT id, name, submitted_by_id, avg_star_rating,
-                CASE WHEN favorites.cnt IS NULL THEN 0 ELSE favorites.cnt END AS favorite_cnt
-                FROM database_mappool
-                LEFT JOIN (
-                    SELECT mappool_id, COUNT(*) AS cnt FROM database_mappoolfavorite
-                    GROUP BY mappool_id
-                ) favorites ON (favorites.mappool_id = database_mappool.id)
-                ORDER BY {order_by} DESC
-                LIMIT {limit} OFFSET {offset}
-            """)
-        else:
-            cursor.execute(f"""
-                SELECT id, name, submitted_by_id, avg_star_rating,
-                CASE WHEN all_favorites IS NULL THEN 0 ELSE all_favorites.cnt END AS all_favorites_cnt,
-                CASE WHEN favorites.cnt IS NULL THEN 0 ELSE favorites.cnt END AS favorite_cnt
-                FROM database_mappool
-                LEFT JOIN (
-                    SELECT mappool_id, COUNT(*) AS cnt FROM database_mappoolfavorite
-                    {'' if where is None else 'WHERE ' + where}
-                    GROUP BY mappool_id
-                ) favorites ON (favorites.mappool_id = database_mappool.id)
-                LEFT JOIN (
-                    SELECT mappool_id, COUNT(*) AS cnt FROM database_mappoolfavorite
-                    GROUP BY mappool_id
-                ) all_favorites ON (all_favorites.mappool_id = database_mappool.id)
-                ORDER BY {order_by} DESC
-                LIMIT {limit} OFFSET {offset}
-            """)
-        data = cursor.fetchall()
-
-    mappool_list = []
-    for mappool in data:
-        obj = Mappool(id=mappool[0], name=mappool[1], submitted_by_id=mappool[2], avg_star_rating=mappool[3])
-        obj.favorite_count = mappool[4]
-        mappool_list.append(obj)
-
-    return mappool_list
-
-
-async def get_mappools_with_favorites(page: int, order_by, where: str | None = None) -> list[Mappool]:
-    return await sync_to_async(_get_mappools_with_favorites)(page, order_by, where)
-
-
-async def get_recent_mappools(page) -> list[Mappool]:
-    return await get_mappools_with_favorites(page, "id")
-
-
-async def get_favorite_mappools(page) -> list[Mappool]:
-    return await get_mappools_with_favorites(page, "favorite_cnt")
-
-
-async def get_trending_mappools(page) -> list[Mappool]:
-    week_ago = time.time() // 1 - 604800
-    return await get_mappools_with_favorites(page, "all_favorites_cnt", f"timestamp > {week_ago}")
-
-
-async def get_full_mappool(user, mappool_id) -> dict:
+async def get_full_mappool(user, mappool_id) -> dict | None:
     include = (
         "submitted_by",
     )
@@ -95,9 +33,12 @@ async def get_full_mappool(user, mappool_id) -> dict:
     )
 
     try:
-        mappool = await Mappool.objects.prefetch_related(*prefetch).select_related(*include).aget(id=mappool_id)
+        mappool = await Mappool.objects.prefetch_related(
+            *prefetch
+        ).select_related(*include).aget(id=mappool_id)
     except Mappool.DoesNotExist:
         return
+
     data = MappoolSerializer(mappool).serialize(include=include+prefetch)
 
     if user.is_authenticated:
@@ -119,20 +60,15 @@ async def mappools(req, mappool_id=None):
         return JsonResponse(mappool, safe=False) if mappool is not None else \
             error("invalid mappool id", 404)
 
-    sort_options = {
-        "recent": get_recent_mappools,
-        "favorites": get_favorite_mappools,
-        "trending": get_trending_mappools
-    }
-    sort = option_query_param(tuple(sort_options.keys()), "recent")(req.GET.get("s", "recent").lower())
-    page = int_query_param(range(1, 9999999), 1)(req.GET.get("p", 1))
-
-    mappool_list = await sort_options[sort](page)
+    mappool_list = await get_listing_from_params(Mappool, req)
     total = await Mappool.objects.acount()
-    serializer = MappoolSerializer(mappool_list, many=True)
+
     return JsonResponse(
         {
-            "data": serializer.serialize(include=["favorite_count"]),
+            "data": MappoolSerializer(
+                mappool_list,
+                many=True
+            ).serialize(include=["favorite_count"]),
             "total_pages": (total - 1) // 20 + 1
         },
         safe=False
@@ -208,8 +144,6 @@ async def delete_mappool(req, mappool_id):
     DictionaryType({"favorite": BoolType()})
 )
 async def favorite_mappool(req, mappool_id, data):
-    # TODO: make postgresql function for this?
-
     try:
         mappool = await Mappool.objects.aget(id=mappool_id)
     except Mappool.DoesNotExist:
