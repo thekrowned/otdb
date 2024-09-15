@@ -149,7 +149,7 @@ hr {
 #login-dropdown {
     padding: 10px 0;
 
-    position: absolute;
+    position: fixed;
     right: 10px;
     top: -50px;
 
