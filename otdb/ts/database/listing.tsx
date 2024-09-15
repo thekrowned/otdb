@@ -100,6 +100,7 @@ export function createListing<T>(
             return;
 
         query = searchInput.value;
+        page = 1;
         loadPage();
     });
 }

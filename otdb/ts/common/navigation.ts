@@ -63,7 +63,7 @@ export function createPageNavigator(currentPage: number, totalPages: number, cal
  * @returns new page value
  */
 export function onPageClick(evt: MouseEvent, currentPage: number | string) {
-    document.getElementById(`page-${currentPage}`).classList.remove("active");
+    document.getElementById(`page-${currentPage}`)?.classList.remove("active");
     const pageElm = evt.target as Element;
     pageElm.classList.add("active");
     return parseInt(pageElm.innerHTML);
