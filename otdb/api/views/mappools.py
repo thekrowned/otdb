@@ -60,7 +60,7 @@ async def mappools(req, mappool_id=None):
         return JsonResponse(mappool, safe=False) if mappool is not None else \
             error("invalid mappool id", 404)
 
-    mappool_list = await get_listing_from_params(
+    mappool_list, total = await get_listing_from_params(
         Mappool,
         (
             "name",
@@ -71,7 +71,6 @@ async def mappools(req, mappool_id=None):
         ),
         req
     )
-    total = await Mappool.objects.acount()
 
     return JsonResponse(
         {

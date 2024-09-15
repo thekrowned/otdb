@@ -58,12 +58,11 @@ async def tournaments(req, id=None):
         return JsonResponse(tournament, safe=False) if tournament is not None else \
             error("invalid tournament id", 404)
 
-    tournament_list = await get_listing_from_params(
+    tournament_list, total = await get_listing_from_params(
         Tournament,
         ("name", "abbreviation", "description"),
         req
     )
-    total = await Tournament.objects.acount()
 
     return JsonResponse({
         "data": TournamentSerializer(
