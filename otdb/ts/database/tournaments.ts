@@ -2,24 +2,30 @@ import { ElementsManager } from "../common/elements";
 import { createPageNavigator, onPageClick } from "../common/navigation";
 import { getElementByIdOrThrow, removeChildren } from "../common/util";
 import { createListingItem } from "./listing";
+import {setDelayedTypeable} from "../common/interactions";
+import {ListingSortType} from "../common/api";
 
 const manager = new ElementsManager();
 
 export function tournamentsSetup() {
-    const query = new URLSearchParams(window.location.search);
-    var sort: string = query.get("s") ?? "recent";
-    var page: number = parseInt(query.get("p") ?? "1");
+    const params = new URLSearchParams(window.location.search);
+    var sort: string = params.get("s") ?? "recent";
+    var page: number = parseInt(params.get("p") ?? "1");
+    let query: string = params.get("q") ?? "";
     var currentSortElm = null;
 
     const loadingText = getElementByIdOrThrow("loading-text");
     const tournamentContainer = getElementByIdOrThrow("tournaments-container");
+    const searchInput = getElementByIdOrThrow<HTMLInputElement>("search-input");
 
     function loadPage() {
+        window.history.replaceState({ s: sort, p: page }, document.title, `?s=${sort}&p=${page}&q=${query}`);
+
         removeChildren(tournamentContainer);
 
         loadingText.classList.remove("hidden");
 
-        manager.api.getTournaments(page).then((resp) => {
+        manager.api.getTournaments(page, sort as ListingSortType, query).then((resp) => {
             loadingText.classList.add("hidden");
 
             if (resp === undefined) {
@@ -48,7 +54,7 @@ export function tournamentsSetup() {
 
         elm.classList.add("active");
         currentSortElm = elm;
-        window.history.replaceState({ s: sort, p: page }, document.title, `?s=${sort}&p=${page}`)
+
         loadPage();
     }
 
@@ -67,4 +73,12 @@ export function tournamentsSetup() {
             switchSort(option);
         });
     }
+
+    setDelayedTypeable(searchInput, () => {
+        if (query === searchInput.value)
+            return;
+
+        query = searchInput.value;
+        loadPage();
+    });
 }

@@ -1,13 +1,18 @@
+:root {
+    --interaction-height: 30px;
+}
+
 .interaction-container {
-    padding: 5px 20px;
+    padding: 10px 20px;
 
     display: flex;
-    flex-direction: row;
-    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .clickable {
-    height: 30px;
+    height: var(--interaction-height);
     padding: 5px;
 
     border-radius: 3px;
@@ -41,4 +46,18 @@
 
 .clickable.hazard:hover {
     background-color: var(--hover-hazard-color);
+}
+
+.typeable {
+    width: 200px;
+    height: var(--interaction-height);
+    padding: 5px;
+
+    border: none;
+    border-radius: 5px;
+
+    background-color: rgba(0, 0, 0, 0.4);
+
+    font-family: inherit;
+    font-size: 20px;
 }

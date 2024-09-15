@@ -3,11 +3,12 @@
 {% block title %}Tournaments{% endblock title %}
 {% block body %}
 <div class="page-container">
-    <div id="sort-menu">
+    <div id="sort-menu" class="interaction-container">
         <div>Sort</div>
         <div id="recent-sort" class="clickable">Recent</div>
         <div id="favorite-sort" class="clickable">Favorites</div>
         <div id="trending-sort" class="clickable">Trending</div>
+        <input id="search-input" class="typeable" type="text" placeholder="Search">
         <div style="flex-grow: 1;"></div>
         <a href="{% url 'new_tournament' %}"><div id="add-tournament" class="clickable">Add tournament</div></a>
     </div>

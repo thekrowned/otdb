@@ -29,3 +29,20 @@ export function setHoldClick(element: HTMLElement, callback: () => void) {
     element.addEventListener("mouseleave", stopProgress);
     element.addEventListener("mouseup", stopProgress);
 }
+
+export function setDelayedTypeable(input: HTMLInputElement, callback: () => void) {
+    let timeoutId: number | null = null;
+
+    function activate() {
+        timeoutId = null;
+        callback();
+    }
+
+    input.addEventListener("input", () => {
+        if (timeoutId !== null)
+            clearTimeout(timeoutId);
+
+        timeoutId = setTimeout(activate, 500);
+    });
+    input.addEventListener("change", activate);
+}

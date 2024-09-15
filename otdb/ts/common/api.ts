@@ -2,7 +2,7 @@ import { EventManager } from "./event";
 import { getCookies } from "./util";
 import { ValidMod } from "./constants";
 
-export type MappoolSortType = "recent" | "favorites" | "trending";
+export type ListingSortType = "recent" | "favorites" | "trending";
 
 export interface User {
     id: number;
@@ -212,7 +212,7 @@ export class APIManager {
      * @param query - string query to search with
      * @returns mappools and total pages if success, otherwise undefined
      */
-    public async getMappools(page: number, sort: MappoolSortType, query: string): Promise<MappoolsResponse | undefined> {
+    public async getMappools(page: number, sort: ListingSortType, query: string): Promise<MappoolsResponse | undefined> {
         return await this.req(`mappools/?s=${sort}&p=${page}&q=${query}`);
     }
 
@@ -288,8 +288,8 @@ export class APIManager {
      * @param page - page to index
      * @returns list of tournaments and total pages if success, otherwise undefined
      */
-    public async getTournaments(page: number): Promise<TournamentsResponse | undefined> {
-        return await this.req(`tournaments/?p=${page}`);
+    public async getTournaments(page: number, sort: ListingSortType, query: string): Promise<TournamentsResponse | undefined> {
+        return await this.req(`tournaments/?p=${page}&s=${sort}&q=${query}`);
     }
 
     /**

@@ -1,8 +1,9 @@
 import { getElementByIdOrThrow, removeChildren } from "../common/util";
 import { ElementsManager } from "../common/elements";
 import { createPageNavigator, onPageClick } from "../common/navigation";
-import { MappoolSortType, MappoolWithFavorites } from "../common/api";
+import { ListingSortType, MappoolWithFavorites } from "../common/api";
 import { createListingItem } from "./listing";
+import {setDelayedTypeable} from "../common/interactions";
 
 const manager = new ElementsManager();
 
@@ -23,15 +24,20 @@ export function mappoolsSetup() {
     let query: string = params.get("q") ?? "";
     let currentSortElm = null;
 
+    const loadingText = getElementByIdOrThrow("loading-text");
     const mappoolContainer = getElementByIdOrThrow("mappools-container");
+    const searchInput = getElementByIdOrThrow<HTMLInputElement>("search-input");
+
+    searchInput.value = query;
 
     function loadPage() {
-        const loadingText = getElementByIdOrThrow("loading-text");
+        window.history.replaceState({ s: sort, p: page }, document.title, `?s=${sort}&p=${page}&q=${query}`);
     
         removeChildren(mappoolContainer);
+
         loadingText.classList.remove("hidden");
     
-        manager.api.getMappools(page, sort as MappoolSortType, query).then((resp) => {
+        manager.api.getMappools(page, sort as ListingSortType, query).then((resp) => {
             loadingText.classList.add("hidden");
     
             if (resp === undefined) {
@@ -58,7 +64,7 @@ export function mappoolsSetup() {
 
         elm.classList.add("active");
         currentSortElm = elm;
-        window.history.replaceState({ s: sort, p: page }, document.title, `?s=${sort}&p=${page}&q=${query}`);
+
         loadPage();
     }
 
@@ -77,4 +83,12 @@ export function mappoolsSetup() {
             switchSort(option);
         });
     }
+
+    setDelayedTypeable(searchInput, () => {
+        if (query === searchInput.value)
+            return;
+
+        query = searchInput.value;
+        loadPage();
+    });
 }
