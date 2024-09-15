@@ -2,7 +2,7 @@ import { getElementByIdOrThrow } from "../common/util";
 import {createListing, createListingItem} from "./listing";
 import {APIManager, TournamentWithFavorites} from "../common/api";
 
-function createTournamentItem(tournament: TournamentWithFavorites) {
+export function createTournamentItem(tournament: TournamentWithFavorites) {
     return createListingItem(
         tournament.id,
         tournament.name,

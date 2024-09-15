@@ -57,6 +57,14 @@ hr {
     background-color: white;
 }
 
+h1, h2 {
+    margin: 10px 0;
+}
+
+h1 {
+    color: white;
+}
+
 #actual-body {
     width: 100%;
     min-height: calc(100vh - 150px);

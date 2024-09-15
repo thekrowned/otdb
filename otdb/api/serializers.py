@@ -143,10 +143,22 @@ class OsuUserSerializer(metaclass=SerializerMeta):
     model = OsuUser
     fields = ["id", "username", "avatar", "cover"]
     transforms = {
-        "involvements": "staff_roles"
+        "involvements": "staff_roles",
+        "mappool_favorite_connections": "mappool_favorites",
+        "tournament_favorite_connections": "tournament_favorites"
     }
 
 
 class MappoolConnectionSerializer(metaclass=SerializerMeta):
     model = MappoolConnection
     fields = ["mappool_id", "tournament_id", "name_override"]
+
+
+class MappoolFavoriteSerializer(metaclass=SerializerMeta):
+    model = MappoolFavorite
+    fields = ["timestamp"]
+
+
+class TournamentFavoriteSerializer(metaclass=SerializerMeta):
+    model = TournamentFavorite
+    fields = ["timestamp"]

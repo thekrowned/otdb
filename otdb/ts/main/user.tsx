@@ -1,9 +1,18 @@
 import {ElementsManager} from "../common/elements";
-import {Tournament, TournamentWithFavorites, User, UserExtended, UserTournamentInvolvement} from "../common/api";
+import {
+    MappoolWithFavorites,
+    Tournament,
+    TournamentWithFavorites,
+    User,
+    UserExtended,
+    UserTournamentInvolvement
+} from "../common/api";
 import {getElementByIdOrThrow, parseRolesFlag} from "../common/util";
 import jsx from "../jsxFactory";
 import {ROLES_SORT} from "../common/constants";
 import {createListingItem} from "../database/listing";
+import {createTournamentItem} from "../database/tournaments";
+import {createMappoolItem} from "../database/mappools";
 
 const manager = new ElementsManager();
 
@@ -28,10 +37,39 @@ function createUserStaffRole(staffRole: UserTournamentInvolvement) {
     );
 }
 
-function createUserStaffRoles(staffRoles: UserTournamentInvolvement[]) {
-    const roles: { [key: string]: TournamentWithFavorites[] } = {};
+function createUserConnections(user: UserExtended) {
+    const container = <div class="user-roles-container"></div>;
 
-    for (const staffRole of staffRoles) {
+    function addTournamentSection(title: string, tournaments: TournamentWithFavorites[]) {
+        container.append(<h2>{title}</h2>);
+        container.append(
+            <div class="listing-container left">
+                {tournaments.map(createTournamentItem)}
+            </div>
+        );
+    }
+
+    function addMappoolSection(title: string, mappools: MappoolWithFavorites[]) {
+        container.append(<h2>{title}</h2>);
+        container.append(
+            <div class="listing-container left">
+                {mappools.map(createMappoolItem)}
+            </div>
+        );
+    }
+
+    container.append(<h1>Favorites</h1>);
+
+    if (user.tournament_favorites.length > 0)
+        addTournamentSection("Tournament favorites", user.tournament_favorites.map((f) => f.tournament));
+
+    if (user.mappool_favorites.length > 0)
+        addMappoolSection("Mappool favorites", user.mappool_favorites.map((f) => f.mappool));
+
+    container.append(<h1>Staffing roles</h1>);
+
+    const roles: { [key: string]: TournamentWithFavorites[] } = {};
+    for (const staffRole of user.staff_roles) {
         for (const role of parseRolesFlag(staffRole.roles)) {
             if (roles[role] === undefined)
                 roles[role] = [];
@@ -40,24 +78,11 @@ function createUserStaffRoles(staffRoles: UserTournamentInvolvement[]) {
         }
     }
 
-    const container = <div class="user-roles-container"></div>;
-
     const sortedEntries = Object.entries(roles).sort(
         (a, b) => ROLES_SORT.indexOf(a[0]) - ROLES_SORT.indexOf(b[0])
     );
-    for (const [role, tournaments] of sortedEntries) {
-        container.append(<h1>{role}</h1>);
-        container.append(
-            <div class="listing-container left">
-                {tournaments.map((t) => createListingItem(
-                    t.id,
-                    t.name,
-                    t.favorite_count,
-                    "tournaments"
-                ))}
-            </div>
-        );
-    }
+    for (const [role, tournaments] of sortedEntries)
+        addTournamentSection(role, tournaments);
 
     return container;
 }
@@ -71,7 +96,7 @@ export function userSetup() {
 
         page.append(
             createUserInfo(user),
-            createUserStaffRoles(user.staff_roles)
+            createUserConnections(user)
         );
     }
 

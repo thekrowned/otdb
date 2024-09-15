@@ -2,7 +2,7 @@ import { getElementByIdOrThrow } from "../common/util";
 import {APIManager, MappoolWithFavorites} from "../common/api";
 import {createListing, createListingItem} from "./listing";
 
-function createMappoolItem(mappool: MappoolWithFavorites) {
+export function createMappoolItem(mappool: MappoolWithFavorites) {
     return createListingItem(
         mappool.id,
         mappool.name,

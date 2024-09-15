@@ -372,11 +372,11 @@ class MappoolConnection(models.Model):
 
 class MappoolFavorite(models.Model):
     mappool = models.ForeignKey(Mappool, models.CASCADE, related_name="favorite_connections")
-    user = models.ForeignKey(OsuUser, models.CASCADE)
+    user = models.ForeignKey(OsuUser, models.CASCADE, related_name="mappool_favorite_connections")
     timestamp = models.PositiveBigIntegerField()
 
 
 class TournamentFavorite(models.Model):
     tournament = models.ForeignKey(Tournament, models.CASCADE, related_name="favorite_connections")
-    user = models.ForeignKey(OsuUser, models.CASCADE)
+    user = models.ForeignKey(OsuUser, models.CASCADE, related_name="tournament_favorite_connections")
     timestamp = models.PositiveBigIntegerField()

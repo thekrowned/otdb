@@ -16,6 +16,18 @@ async def users(req, id):
                 queryset=Tournament.objects.annotate(
                     favorite_count=models.Count("favorites")
                 )
+            ),
+            models.Prefetch(
+                "tournament_favorite_connections__tournament",
+                queryset=Tournament.objects.annotate(
+                    favorite_count=models.Count("favorites")
+                )
+            ),
+            models.Prefetch(
+                "mappool_favorite_connections__mappool",
+                queryset=Mappool.objects.annotate(
+                    favorite_count=models.Count("favorites")
+                )
             )
         ).aget(id=id)
         OsuUser.objects.values()
@@ -23,5 +35,9 @@ async def users(req, id):
         return error("Invalid user id", 400)
 
     return JsonResponse(OsuUserSerializer(user).serialize(
-        include=["involvements__tournament__favorite_count"]
+        include=[
+            "involvements__tournament__favorite_count",
+            "tournament_favorite_connections__tournament__favorite_count",
+            "mappool_favorite_connections__mappool__favorite_count",
+        ]
     ), safe=False)

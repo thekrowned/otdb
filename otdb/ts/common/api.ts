@@ -13,6 +13,24 @@ export interface User {
 
 export interface UserExtended extends User {
     staff_roles: UserTournamentInvolvement[];
+    tournament_favorites: UserTournamentFavorite[];
+    mappool_favorites: UserMappoolFavorite[];
+}
+
+export interface MappoolFavorite {
+    timestamp: number;
+}
+
+export interface TournamentFavorite {
+    timestamp: number;
+}
+
+export interface UserMappoolFavorite extends MappoolFavorite {
+    mappool: MappoolWithFavorites;
+}
+
+export interface UserTournamentFavorite extends TournamentFavorite {
+    tournament: TournamentWithFavorites;
 }
 
 export interface BeatmapsetMetadata {
