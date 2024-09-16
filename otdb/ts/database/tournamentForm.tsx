@@ -1,8 +1,9 @@
 import { ElementsManager } from "../common/elements";
 import { TextButton, TextDropdown, TextInput } from "../common/form";
-import { getElementByIdOrThrow } from "../common/util";
+import {getElementByIdOrThrow, parseRolesFlag} from "../common/util";
 import {ROLES_SORT, VALID_ROLES} from "../common/constants";
 import { TournamentExtended } from "../common/api";
+import jsx from "../jsxFactory";
 
 const manager = new ElementsManager();
 
@@ -12,7 +13,6 @@ export function tournamentFormSetup(editing: boolean) {
     const abbrInput = manager.inputs.getRequired<TextInput>("abbreviation-input");
     const linkInput = manager.inputs.getRequired<TextInput>("link-input");
     const descriptionInput = manager.inputs.getRequired<TextInput>("description-input");
-    const addUser = manager.inputs.getRequired<TextButton>("add-user");
     const addMappool = manager.inputs.getRequired<TextButton>("add-mappool");
     const staffLabel = getElementByIdOrThrow("staff-label");
 
@@ -24,9 +24,22 @@ export function tournamentFormSetup(editing: boolean) {
         manager.inputs.submit.disable();
 
         const userIds = manager.inputs.query<TextInput>("user-id-input-");
-        const roles = manager.inputs.query<TextDropdown>("roles-input-");
         const mappoolIds = manager.inputs.query<TextInput>("mappool-id-input-");
         const nameOverrides = manager.inputs.query<TextInput>("name-override-id-input-");
+
+        const staff: {[id: string]: number} = {};
+        for (const userId of userIds) {
+            const id = userId.getValue();
+            if (staff[id] === undefined) {
+                staff[id] = 0;
+            }
+
+            const roleFlag = 1 << VALID_ROLES.indexOf(userId.id.split("-")[5]);
+            if (staff[id] & roleFlag)
+                continue;
+
+            staff[id] += roleFlag;
+        }
 
         manager.api.newTournament({
             id: tournamentData?.id,
@@ -34,10 +47,9 @@ export function tournamentFormSetup(editing: boolean) {
             abbreviation: abbrInput.getValue(),
             link: linkInput.getValue(),
             description: descriptionInput.getValue(),
-            staff: userIds.map((userId, i) => ({
-                id: parseInt(userId.getValue()),
-                roles: roles[i].getValues().map((value) => VALID_ROLES.indexOf(value)).reduce((t, i) => t + (1 << i), 0)
-            })),
+            staff: Object.entries(staff).map(
+                ([id, roles]) => ({id: parseInt(id), roles: roles})
+            ),
             mappools: mappoolIds.map((mappoolId, i) => ({
                 id: parseInt(mappoolId.getValue()),
                 name_override: nameOverrides[i].getValue() === "" ? null : nameOverrides[i].getValue()
@@ -53,46 +65,32 @@ export function tournamentFormSetup(editing: boolean) {
 
     var idIncrement = 0;
 
-    function addUserInputs(): {userId: TextInput, roles: TextDropdown} {
-        const inputContainer = document.createElement("div");
-        inputContainer.classList.add("input-container", "prevent-select");
-    
-        const userIdInput = manager.inputs.create<TextInput>(`user-id-input-${idIncrement}`, {
+    function addUserInputs(role: string): {userId: TextInput, remove: TextButton} {
+        const userIdInput = manager.inputs.create<TextInput>(`user-id-input-${idIncrement}-role-${role}`, {
             type: "text",
             label: "User ID",
             validation: "uint",
             required: true
-        }, inputContainer);
+        }, null);
         userIdInput.resize(150);
 
-        const rolesInput = manager.inputs.create<TextDropdown>(`roles-input-${idIncrement}`, {
-            type: "text-dropdown",
-            label: "Roles",
-            options: ROLES_SORT,
-            multi: true
-        }, inputContainer);
-        rolesInput.resize(300);
-
-        const removeBtn = manager.inputs.create<TextButton>(`remove-beatmap-btn-${idIncrement}`, {
+        const removeBtn = manager.inputs.create<TextButton>(`remove-user-btn-${idIncrement}`, {
             type: "button",
             label: "-",
             danger: true,
             square: true
-        }, inputContainer);
+        }, null);
+
         removeBtn.addCallback(() => {
-            manager.inputs.remove(userIdInput.id);
-            manager.inputs.remove(rolesInput.id);
-            manager.inputs.remove(removeBtn.id);
-            inputContainer.remove();
+            manager.inputs.remove(userIdInput.id).elm.remove();
+            manager.inputs.remove(removeBtn.id).elm.remove();
         });
     
         idIncrement += 1;
-    
-        usersSection.insertBefore(inputContainer, manager.inputs.submit.getParentContainer());
 
         return {
             userId: userIdInput,
-            roles: rolesInput
+            remove: removeBtn
         };
     }
 
@@ -138,12 +136,41 @@ export function tournamentFormSetup(editing: boolean) {
         };
     }
 
+    const roleInputContainers: {[role: string]: Element} = {};
+
+    for (const role of ROLES_SORT) {
+        const addInputBtn = manager.inputs.create<TextButton>(
+            "add-user-" + role,
+            {
+                type: "button",
+                label: "+",
+                square: true
+            },
+            null
+        );
+        usersSection.appendChild(
+            <div class="input-container prevent-select">
+                {addInputBtn.elm}
+                <h2>{role}</h2>
+            </div>
+        );
+        const userInputContainer = usersSection.appendChild(
+            <div class="input-container prevent-select"></div>
+        );
+
+        addInputBtn.addCallback(
+            () => userInputContainer.append(...Object.values(addUserInputs(role)).map((i) => i.elm))
+        );
+
+        roleInputContainers[role] = userInputContainer;
+    }
+
     addMappool.addCallback(addMappoolInputs);
-    addUser.addCallback(addUserInputs);
     manager.inputs.submit.addCallback(onSubmit);
 
     var tournamentData: TournamentExtended | null = null;
 
+    // fill in data
     if (editing) {
         tournamentData = JSON.parse(getElementByIdOrThrow("tournament-data").innerText);
 
@@ -153,12 +180,10 @@ export function tournamentFormSetup(editing: boolean) {
         descriptionInput.setValue(tournamentData.description);
 
         for (const staff of tournamentData.staff) {
-            const inputs = addUserInputs();
-            inputs.userId.setValue(staff.user.id.toString());
-            for (const item of inputs.roles.items) {
-                if ((1 << VALID_ROLES.indexOf(item.getLabel())) & staff.roles) {
-                    item.pick();
-                }
+            for (const role of parseRolesFlag(staff.roles)) {
+                const inputs = addUserInputs(role);
+                roleInputContainers[role].append(inputs.userId.elm, inputs.remove.elm);
+                inputs.userId.setValue(""+staff.user.id);
             }
         }
 
