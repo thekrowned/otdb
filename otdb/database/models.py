@@ -85,6 +85,8 @@ class UserRoles(IntFlag):
     HOST = 1 << 8
     GRAPHICS = 1 << 9
     ADMIN = 1 << 10
+    STATISTICIAN = 1 << 11
+    OTHER = 1 << 12
 
 
 @enum_field(UserRoles, models.PositiveIntegerField)
