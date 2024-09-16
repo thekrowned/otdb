@@ -47,7 +47,6 @@ export function createListing<T>(
 
         loadingText.classList.remove("hidden");
 
-
         getData.bind(manager.api)(page, sort as ListingSortType, query).then((resp: {data: T[], total_pages: number}) => {
             loadingText.classList.add("hidden");
 
