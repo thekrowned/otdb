@@ -46,7 +46,6 @@ IF n_existing_id = 0 THEN
 ELSE
 	UPDATE database_mappool SET
 		name = v_title,
-		submitted_by_id = n_submitted_by,
 		avg_star_rating = n_avg_sr
 	WHERE id = n_existing_id;
     -- Easier to delete all connections and recreate new ones
