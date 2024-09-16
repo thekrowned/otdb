@@ -141,7 +141,7 @@ class MappoolBeatmapConnectionSerializer(metaclass=SerializerMeta):
 
 class OsuUserSerializer(metaclass=SerializerMeta):
     model = OsuUser
-    fields = ["id", "username", "avatar", "cover"]
+    fields = ["id", "username", "avatar", "cover", "is_admin"]
     transforms = {
         "involvements": "staff_roles",
         "mappool_favorite_connections": "mappool_favorites",

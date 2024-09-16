@@ -30,7 +30,7 @@ async def new_mappool(req):
 async def edit_mappool(req, id: int):
     user = await req.auser()
     mappool = await api_views.get_full_mappool(user, id)
-    if mappool["submitted_by_id"] != user.id:
+    if mappool["submitted_by_id"] != user.id and not user.is_admin:
         raise Http404()
 
     return await render(req, "database/mappool_form.html", extra_context={
@@ -54,7 +54,7 @@ async def new_tournament(req):
 async def edit_tournament(req, id: int):
     user = await req.auser()
     tournament = await api_views.get_full_tournament(user, id)
-    if tournament["submitted_by_id"] != user.id:
+    if tournament["submitted_by_id"] != user.id and not user.is_admin:
         raise Http404()
 
     return await render(req, "database/tournament_form.html", extra_context={

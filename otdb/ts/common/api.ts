@@ -9,6 +9,7 @@ export interface User {
     username: string;
     avatar: string;
     cover: string;
+    is_admin: string;
 }
 
 export interface UserExtended extends User {

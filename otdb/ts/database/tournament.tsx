@@ -126,7 +126,7 @@ export function tournamentSetup() {
             favoriteBtn.classList.remove("hidden");
             favoriteSvg.setAttribute("fill", data.is_favorited ? "white":"none");
             
-            if (data.submitted_by_id === manager.api.session.user.id) {
+            if (data.submitted_by_id === manager.api.session.user.id || manager.api.session.user.is_admin) {
                 editBtn.classList.remove("hidden");
                 deleteBtn.classList.remove("hidden");
             }
