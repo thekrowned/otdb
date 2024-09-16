@@ -45,6 +45,19 @@ export type GetInputAttributes<T> =
 
 // input manager
 
+function inputFromType<T extends Input>(type: InputType, elm: HTMLElement): T {
+    const input = {
+        "text": TextInput,
+        "text-dropdown": TextDropdown,
+        "button": TextButton
+    }[type];
+
+    if (input === undefined)
+        throw new Error(`Invalid input type '${type}'`);
+
+    return new input(elm) as unknown as T;
+}
+
 export class InputManager {
     protected inputs: Array<Input>;
 
@@ -54,7 +67,10 @@ export class InputManager {
         this.inputs = [];
 
         for (const input of Array.from(document.querySelectorAll("form-input"))) {
-            const initializedInput = initInput(input as HTMLElement)
+            const initializedInput = inputFromType(
+                input.getAttribute("type") as InputType,
+                input as HTMLElement
+            );
             this.add(initializedInput, false);
 
             if (initializedInput.id === "submit") {
@@ -106,9 +122,10 @@ export class InputManager {
      * @param parent 
      * @returns 
      */
-    public create<T extends Input>(id: string, attributes: GetInputAttributes<T>, parent: Node): T {
+    public create<T extends Input>(id: string, attributes: GetInputAttributes<T>, parent: Node | null): T {
         const formInput = <form-input id={id}></form-input> as HTMLElement;
-        parent.appendChild(formInput);
+        if (parent !== null)
+            parent.appendChild(formInput);
 
         for (const key of Object.keys(attributes)) {
             let value = attributes[key];
@@ -125,7 +142,7 @@ export class InputManager {
             formInput.setAttribute(key, attributes[key]);
         }
 
-        const input = initInput(formInput);
+        const input = inputFromType<T>(attributes.type, formInput);
         this.add(input);
 
         return input as T;
@@ -203,10 +220,24 @@ abstract class Input {
     public type: InputType;
     public manager: InputManager | null;
     public elm: HTMLElement;
+    public innerElm: HTMLElement;
 
-    public constructor(id: string, elm: HTMLElement) {
-        this.id = id;
+    public constructor(elm: HTMLElement) {
+        const id = elm.getAttribute("id");
+        if (id === null) {
+            throw new Error("Input must have an id");
+        }
+
+        const innerElm = document.createElement("inner-form-input");
+        elm.append(innerElm);
+
+        if (elm.hasAttribute("innerStyle")) {
+            innerElm.style.cssText = elm.getAttribute("innerStyle") as string;
+        }
+
         this.elm = elm;
+        this.innerElm = innerElm;
+        this.id = id;
     }
 
     public abstract checkValueValidity(): boolean;
@@ -216,7 +247,7 @@ abstract class Input {
     }
 
     public getParentContainer(): ParentNode {
-        return (this.elm.parentNode as ParentNode).parentNode as ParentNode;
+        return (this.innerElm.parentNode as ParentNode).parentNode as ParentNode;
     }
 }
 
@@ -230,21 +261,53 @@ export class TextInput extends Input {
     protected isRequired: boolean;
     protected maxLength: number | null;
 
-    public constructor(id: string, elm: HTMLElement, label: HTMLParagraphElement, input: HTMLInputElement | HTMLTextAreaElement, validation: ValidationFn | null, required: boolean = false, maxLength: number | null = null) {
-        super(id, elm);
+    public constructor(elm: HTMLElement) {
+        super(elm);
+
+        this.innerElm.classList.add("text-input-container");
+
+        const label = (
+            <p class="text-input-label">{ elm.getAttribute("label") ?? "" }</p>
+        )as HTMLParagraphElement;
+        this.innerElm.appendChild(label);
+
+        if (elm.hasAttribute("required")) {
+            this.innerElm.appendChild(
+                <p class="text-input-required">*</p>
+            );
+        }
+
+        var input: HTMLInputElement | HTMLTextAreaElement;
+        if (!elm.hasAttribute("textarea")) {
+            input = <input type="text"></input> as HTMLInputElement;
+        } else {
+            input = (
+                <textarea class="textarea" rows={ elm.getAttribute("rows") ?? "4" }></textarea>
+            ) as HTMLTextAreaElement;
+            label.classList.add("textarea");
+        }
+        input.classList.add("text-input");
+        this.innerElm.appendChild(input);
+
+        // if (textType == "text-dropdown") {
+        //     inputContainer = <div className="dropdown-input-container">{input}</div> as HTMLDivElement;
+        //     this.innerElm.appendChild(inputContainer);
+
+        const maxLengthStr = elm.getAttribute("max-length");
+        const maxLength = maxLengthStr === null ? null : parseInt(maxLengthStr);
 
         this.label = label;
         this.input = input;
-        this.validation = validation;
-        this.isRequired = required;
+        this.validation = getCheckFn(elm.getAttribute("validation") as ValidationType);
+        this.isRequired = elm.hasAttribute("required");
         this.maxLength = maxLength;
 
         this.input.addEventListener("input", (evt) => this.onInputChange(evt));
-        this.input.addEventListener("focus", (evt) => {
+        this.input.addEventListener("focus", () => {
             this.label.classList.add("active");
             this.input.focus();
         });
-        this.input.addEventListener("blur", (evt) => {
+        this.input.addEventListener("blur", () => {
             if (this.isEmpty()) {
                 this.label.classList.remove("active");
             }
@@ -258,9 +321,9 @@ export class TextInput extends Input {
         );
 
         if (this.lastIsValid && !isValid) {
-            this.elm.classList.add("invalid");
+            this.innerElm.classList.add("invalid");
         } else if (!this.lastIsValid && isValid) {
-            this.elm.classList.remove("invalid");
+            this.innerElm.classList.remove("invalid");
         }
 
         this.lastIsValid = isValid;
@@ -300,7 +363,7 @@ export class TextInput extends Input {
      * @param width
      */
     public resize(width: number) {
-        this.elm.style.width = `${width}px`;
+        this.innerElm.style.width = `${width}px`;
     }
 
     public checkValueValidity() {
@@ -323,7 +386,7 @@ export class TextInput extends Input {
 }
 
 export class TextDropdown extends TextInput {
-    static type: InputType = "text-dropdown"
+    static type: InputType = "text-dropdown";
 
     protected dropdown: HTMLDivElement;
     protected inputContainer: HTMLDivElement;
@@ -331,22 +394,19 @@ export class TextDropdown extends TextInput {
     
     public items: TextDropdownItem[];
 
-    public constructor(
-        id: string,
-        elm: HTMLElement,
-        label: HTMLParagraphElement,
-        input: HTMLInputElement | HTMLTextAreaElement,
-        required: boolean,
-        maxLength: number | null,
-        dropdown: HTMLDivElement,
-        inputContainer: HTMLDivElement,
-        multiAnswer: boolean
-    ) {
-        super(id, elm, label, input, null, required, maxLength);
+    public constructor(elm: HTMLElement) {
+        super(elm);
+
+        const inputContainer = <div class="dropdown-input-container"></div> as HTMLDivElement;
+        inputContainer.append(this.input);
+        this.innerElm.append(inputContainer);
+
+        const dropdown = <div class="dropdown hidden"></div> as HTMLDivElement;
+        this.innerElm.appendChild(dropdown);
 
         this.dropdown = dropdown;
         this.inputContainer = inputContainer;
-        this.multiAnswer = multiAnswer;
+        this.multiAnswer = elm.hasAttribute("multi");
         this.items = [];
 
         this.validation = (text) => {
@@ -361,10 +421,17 @@ export class TextDropdown extends TextInput {
             return isValid;
         }
 
-        input.addEventListener("focus", (evt) => {
+        const options = elm.getAttribute("options")?.split(",");
+        if (options !== undefined) {
+            for (const option of options) {
+                this.createItem(option);
+            }
+        }
+
+        this.input.addEventListener("focus", () => {
             this.dropdown.classList.remove("hidden");
         });
-        input.addEventListener("blur", (evt) => {
+        this.input.addEventListener("blur", () => {
             this.dropdown.classList.add("hidden");
         });
     }
@@ -411,7 +478,7 @@ export class TextDropdown extends TextInput {
 
             container.append(answer, removeAnswer);
 
-            removeAnswer.addEventListener("click", (evt) => {
+            removeAnswer.addEventListener("click", () => {
                 this.onItemRemoved(item, container);
             });
 
@@ -501,7 +568,7 @@ export class TextDropdownItem {
             evt.preventDefault();
         }
 
-        this.elm.onclick = (evt) => {
+        this.elm.onclick = () => {
             this.picked = true;
             this.parent.onItemPicked(this);
         }
@@ -550,13 +617,26 @@ export class TextButton extends Input {
 
     public isEnabled = true;
 
+    public constructor(elm: HTMLElement) {
+        super(elm);
+
+        this.innerElm.classList.add("button");
+        this.innerElm.innerHTML = elm.getAttribute("label") ?? "";
+
+        if (elm.hasAttribute("danger"))
+            this.innerElm.classList.add("danger");
+
+        if (elm.hasAttribute("square"))
+            this.innerElm.classList.add("square");
+    }
+
     /**
      * Add a callback to be performed if the button is clicked while enabled
      * 
      * @param callback
      */
     public addCallback(callback: (MouseEvent) => any) {
-        this.elm.addEventListener("click", (evt) => {
+        this.innerElm.addEventListener("click", (evt) => {
             if (this.isEnabled) {
                 callback(evt);
             }
@@ -567,7 +647,7 @@ export class TextButton extends Input {
      * Enable the button for clicking
      */
     public enable() {
-        this.elm.classList.remove("disabled");
+        this.innerElm.classList.remove("disabled");
         this.isEnabled = true;
     }
 
@@ -575,7 +655,7 @@ export class TextButton extends Input {
      * Disable the button from clicking
      */
     public disable() {
-        this.elm.classList.add("disabled");
+        this.innerElm.classList.add("disabled");
         this.isEnabled = false;
     }
 
@@ -583,151 +663,12 @@ export class TextButton extends Input {
      * Simulate a click on the button
      */
     public click() {
-        this.elm.click();
+        this.innerElm.click();
     }
 
     public checkValueValidity(): boolean {
         return true;
     }
-}
-
-// input initialization
-
-function initInput(elm: HTMLElement): Input {
-    const id = elm.getAttribute("id");
-    if (id === null) {
-        throw new Error("Input must have an id");
-    }
-
-    const inner = document.createElement("inner-form-input");
-    elm.append(inner);
-
-    if (elm.hasAttribute("innerStyle")) {
-        inner.style.cssText = elm.getAttribute("innerStyle") as string;
-    }
-
-    const inputType: InputType | "" = elm.getAttribute("type") as InputType ?? "";
-    switch (inputType) {
-        case "text":
-            return initTextInput(id, elm, inner, inputType);
-        case "text-dropdown":
-            return initTextInput(id, elm, inner, inputType);
-        case "button":
-            return initTextButton(id, elm, inner);
-        default:
-            throw new Error(inputType === "" ? "Attempted to initialize input without a type" : `Attempted to initialize input of invalid type '${inputType}'`);
-    }
-}
-
-function initTextInput(id: string, elm: HTMLElement, innerElm: HTMLElement, textType: InputType): TextInput | TextDropdown {
-    innerElm.classList.add("text-input-container");
-
-    const label = <p className="text-input-label">{ elm.getAttribute("label") ?? "" }</p> as HTMLParagraphElement;
-    innerElm.appendChild(label);
-
-    if (elm.hasAttribute("required")) {
-        innerElm.appendChild(
-            <p className="text-input-required">*</p>
-        );
-    }
-
-    var input: HTMLInputElement | HTMLTextAreaElement;
-    if (!elm.hasAttribute("textarea")) {
-        input = <input type="text"></input> as HTMLInputElement;
-    } else {
-        input = <textarea className="textarea" rows={ elm.getAttribute("rows") ?? "4" }></textarea> as HTMLTextAreaElement;
-        label.classList.add("textarea");
-    }
-    input.classList.add("text-input");
-
-    let inputContainer: HTMLDivElement | null = null;
-    if (textType == "text-dropdown") {
-        inputContainer = <div className="dropdown-input-container">{input}</div> as HTMLDivElement;
-        innerElm.appendChild(inputContainer);
-    } else {
-        innerElm.appendChild(input);
-    }
-
-    const maxLengthStr = elm.getAttribute("max-length");
-    const maxLength = maxLengthStr === null ? null : parseInt(maxLengthStr);
-
-    switch(textType) {
-        case "text":
-            return new TextInput(
-                id,
-                innerElm,
-                label,
-                input,
-                getCheckFn(elm.getAttribute("validation") as ValidationType),
-                elm.hasAttribute("required"),
-                maxLength
-            );
-        case "text-dropdown":
-            return initDropdown(
-                id,
-                elm,
-                innerElm,
-                label,
-                input as HTMLInputElement,
-                elm.hasAttribute("required"),
-                inputContainer as HTMLDivElement,
-                maxLength
-            );
-    }
-
-    throw new Error("Invalid text input type");
-}
-
-function initDropdown(
-    id: string,
-    elm: HTMLElement,
-    innerElm: HTMLElement,
-    label: HTMLParagraphElement,
-    input: HTMLInputElement,
-    required: boolean,
-    inputContainer: HTMLDivElement,
-    maxLength: number | null
-) {
-    const dropdown = document.createElement("div");
-    dropdown.classList.add("dropdown", "hidden");
-
-    innerElm.appendChild(dropdown);
-
-    const dropdownObj = new TextDropdown(
-        id,
-        innerElm,
-        label,
-        input,
-        required,
-        maxLength,
-        dropdown,
-        inputContainer,
-        elm.hasAttribute("multi")
-    );
-
-    const options = elm.getAttribute("options")?.split(",");
-    if (options !== undefined) {
-        for (const option of options) {
-            dropdownObj.createItem(option);
-        }
-    }
-
-    return dropdownObj;
-}
-
-function initTextButton(id: string, elm: HTMLElement, innerElm: HTMLElement): TextButton {
-    innerElm.classList.add("button");
-    innerElm.innerHTML = elm.getAttribute("label") ?? "";
-
-    if (elm.hasAttribute("danger")) {
-        innerElm.classList.add("danger");
-    }
-
-    if (elm.hasAttribute("square")) {
-        innerElm.classList.add("square");
-    }
-
-    return new TextButton(id, innerElm);
 }
 
 // validation
