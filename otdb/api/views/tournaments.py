@@ -130,7 +130,7 @@ async def delete_tournament(req, id):
         return error("Invalid tournament id", 404)
 
     user = await req.auser()
-    if tournament.submitted_by_id != user.id:
+    if tournament.submitted_by_id != user.id and not user.is_admin:
         return error("You cannot delete a tournament submitted by another user", 403)
 
     await tournament.adelete()

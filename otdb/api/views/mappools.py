@@ -139,7 +139,7 @@ async def delete_mappool(req, mappool_id):
         return error("Invalid mappool id", 404)
 
     user = await req.auser()
-    if mappool.submitted_by_id != user.id:
+    if mappool.submitted_by_id != user.id and not user.is_admin:
         return error("You cannot delete a mappool submitted by another person", 403)
 
     await mappool.adelete()
