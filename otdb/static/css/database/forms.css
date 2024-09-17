@@ -223,31 +223,3 @@ inner-form-input {
 .button.danger:hover {
     background-color: var(--hover-hazard-color)
 }
-
-/* Quick add container */
-
-#quick-add-container {
-    width: 500px;
-    top: 200px;
-    left: calc(50% - 250px);
-    padding: 5px;
-
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    border: 3px solid white;
-    border-radius: 5px;
-
-    background-color: var(--fg-color2);
-    z-index: 11;
-}
-
-#quick-add-container.hidden {
-    display: none;
-}
-
-#quick-add-beatmaps-input, #quick-add-slots-input {
-    width: 485px;
-}

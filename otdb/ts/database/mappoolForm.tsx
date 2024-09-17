@@ -3,6 +3,7 @@ import { TextInput, TextButton, TextDropdown } from '../common/form';
 import { getElementByIdOrThrow } from '../common/util';
 import { MappoolPayload, MappoolBeatmapPayload, MappoolExtended } from "../common/api";
 import { ValidMod, VALID_MODS } from '../common/constants';
+import jsx from "../jsxFactory";
 
 const manager = new ElementsManager();
 
@@ -30,25 +31,19 @@ function getMappoolBeatmaps(): Array<MappoolBeatmapPayload> {
 
 export function mappoolFormSetup(editing: boolean) {
     const nameInput = manager.inputs.getRequired<TextInput>("name-input");
-    const quickAddBeatmapsInput = manager.inputs.getRequired<TextInput>("quick-add-beatmaps-input");
-    const quickAddSlotsInput = manager.inputs.getRequired<TextInput>("quick-add-slots-input");
     const addBeatmapBtn = manager.inputs.getRequired<TextButton>("add-beatmap");
     const openQuickAddBtn = manager.inputs.getRequired<TextButton>("quick-add-beatmaps");
-    const quickAddBeatmapsBtn = manager.inputs.getRequired<TextButton>("quick-add-beatmaps-btn");
 
     const beatmapSection: HTMLElement = getElementByIdOrThrow("beatmap-section");
-    const quickAddContainer = getElementByIdOrThrow("quick-add-container");
 
     let idIncrement = 1;
 
     function onOpenQuickAdd() {
-        manager.backdrop.show();
-        quickAddContainer.classList.remove("hidden");
+        manager.popup.open();
     }
     
     function onCloseQuickAdd() {
-        manager.backdrop.hide();
-        quickAddContainer.classList.add("hidden");
+        manager.popup.close();
     }
     
     function deleteCurrentInputs() {
@@ -156,6 +151,33 @@ export function mappoolFormSetup(editing: boolean) {
     
         return {id: beatmapIdInput, slot: slotInput, mods: modsInput};
     }
+
+    const quickAddBeatmapsInput = manager.inputs.create<TextInput>("quick-add-beatmaps", {
+        type: "text",
+        label: "Beatmap IDs",
+        innerStyle: "width: calc(100% - 13px);",
+        textarea: true
+    }, null);
+    const quickAddSlotsInput = manager.inputs.create<TextInput>("quick-add-slots", {
+        type: "text",
+        label: "Slots",
+        innerStyle: "width: calc(100% - 13px);",
+        textarea: true
+    }, null);
+    const quickAddBeatmapsBtn = manager.inputs.create<TextButton>("quick-add-beatmaps", {
+        type: "button",
+        label: "Add beatmaps",
+    }, null);
+
+    manager.popup.setPromptCustom(
+        <p class="description">Input line-separated list of values</p>,
+        <p class="description" style="font-size: 15px">Hint: you can copy-paste directly from a google sheet</p>,
+        quickAddBeatmapsInput.elm,
+        quickAddSlotsInput.elm,
+        <div class="input-container prevent-select">
+            {quickAddBeatmapsBtn.elm}
+        </div>
+    );
 
     addBeatmapBtn.addCallback(() => addBeatmap());
     openQuickAddBtn.addCallback(onOpenQuickAdd);

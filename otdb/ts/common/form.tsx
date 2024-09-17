@@ -13,6 +13,7 @@ interface InputAttributes {
     type: InputType;
     label: string;
     validation?: ValidationType;
+    innerStyle?: string;
 }
 
 interface BaseTextInputAttributes extends InputAttributes {

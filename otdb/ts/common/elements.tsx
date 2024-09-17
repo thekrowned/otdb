@@ -29,16 +29,18 @@ export class BackdropManager {
 
     /**
      * Shows the backdrop
+     *
+     * @param level - level to place the backdrop behind (header, or popup)
      */
-    public show() {
-        this.backdrop.classList.remove("hide");
+    public show(level: "header" | "popup") {
+        this.backdrop.className = "backdrop-level-"+level;
     }
 
     /**
      * Hides the backdrop
      */
     public hide() {
-        this.backdrop.classList.add("hide");
+        this.backdrop.className = "hide";
     }
 
     /**
@@ -98,7 +100,7 @@ export class PopupManager {
      */
     public open() {
         this.show();
-        this.backdrop.show();
+        this.backdrop.show("popup");
     }
 
     /**

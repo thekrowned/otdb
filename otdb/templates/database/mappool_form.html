@@ -26,15 +26,6 @@
         <p class="description small">Note: submission typically takes at least several seconds, so please be patient!</p>
     </div>
 </div>
-<div id="quick-add-container" class="hidden">
-    <p class="description">Input line-separated list of values</p>
-    <p class="description" style="font-size: 15px">Hint: you can copy-paste directly from a google sheet</p>
-    <form-input id="quick-add-beatmaps-input" type="text" label="Beatmap IDs" innerStyle="width: 100%;" textarea></form-input>
-    <form-input id="quick-add-slots-input" type="text" label="Slots" innerStyle="width: 100%;" textarea></form-input>
-    <div class="input-container prevent-select prevent-select">
-        <form-input id="quick-add-beatmaps-btn" type="button" label="Add beatmaps"></form-input>
-    </div>
-</div>
 <script type="module">
     import { mappoolFormSetup } from "{% static 'js/bundled.js' %}";
     mappoolFormSetup({% if editing%}true{% else %}false{% endif %});

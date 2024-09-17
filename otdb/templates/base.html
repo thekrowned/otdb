@@ -17,7 +17,7 @@
         {{ data|json_script:"data" }}
     </head>
     <body>
-        <div class="header">
+        <div id="header" class="header">
             <div class="header-item left">
                 <a class="header-link large" href="{% url 'index' %}">o!TDB</a>
             </div>
@@ -34,13 +34,34 @@
             <a href="{{ auth_url }}"><div class="login-container">Login</div></a>
             {% endif %}
         </div>
+        <div id="mobile-header" class="header">
+            <div class="header-item left">
+                <a class="header-link large" href="{% url 'index' %}">o!TDB</a>
+            </div>
+            <div class="empty-header-item"></div>
+            <svg id="header-arrow-up" class="header-arrow hidden" viewBox="0 0 1 1">
+                <polyline points="0.1,0.7 0.5,0.3 0.9,0.7" fill="none" stroke="black" stroke-width="0.1"></polyline>
+            </svg>
+            <svg id="header-arrow-down" class="header-arrow" viewBox="0 0 1 1">
+                <polyline points="0.1,0.3 0.5,0.7 0.9,0.3" fill="none" stroke="black" stroke-width="0.1"></polyline>
+            </svg>
+        </div>
+        <div id="mobile-header-dropdown" class="hidden">
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <a href="{% url 'user' id=user.id %}">Profile</a>
+                <hr/>
+            {% endif %}
+            <a href="{% url 'tournaments' %}">Tournaments</a>
+            <a href="{% url 'mappools' %}">Mappools</a>
+        </div>
 
         <div id="login-dropdown">
             <div id="dashboard-item" class="login-dropdown-item">Dashboard</div>
             <div id="profile-item" class="login-dropdown-item">Profile</div>
         </div>
 
-        <div id="actual-body">
+        <div id="inner-body">
             {% block body %}{% endblock body %}
         </div>
 
