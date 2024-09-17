@@ -168,7 +168,7 @@ function createDifficultyContainer(beatmap: MappoolBeatmap): HTMLDivElement {
     starRatingDiffContainer.appendChild(difficulty);
 
     const attributesContainer = document.createElement("div");
-    attributesContainer.classList.add("hidden", "column-container", "difficulty-metadata-container");
+    attributesContainer.classList.add("hide", "column-container", "difficulty-metadata-container");
     container.appendChild(attributesContainer);
 
     let difficultyAttributes = getRealAttributes(beatmap);
@@ -322,10 +322,10 @@ export function mappoolSetup() {
     
         function onHover() {
             for (const child of diffContainer.children) {
-                if (child.classList.contains("hidden")) {
-                    child.classList.remove("hidden");
+                if (child.classList.contains("hide")) {
+                    child.classList.remove("hide");
                 } else {
-                    child.classList.add("hidden");
+                    child.classList.add("hide");
                 }
             }
         }
