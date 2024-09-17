@@ -235,14 +235,19 @@ footer {
     overflow: hidden;
 }
 
-.footer {
-    width: 100%;
+.inner-footer {
+    width: calc(100% - 20px);
     height: 100%;
-    padding-left: 5px;
+    padding: 0 10px;
 
     display: flex;
-    justify-content: left;
+    justify-content: space-between;
     align-items: center;
+}
+
+.footer-icon-size {
+    width: 40px;
+    height: 40px;
 }
 
 /* broad stuff */

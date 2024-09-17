@@ -1,5 +1,16 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Home{% endblock title %}
 {% block body %}
+<div class="index-container">
+    <div class="index-title-container">
+        <img class="index-logo" src="{% static 'assets/images/icon.png' %}" alt="o!TDB logo">
+        <h1 style="color: black;">osu! Tournament Database</h1>
+    </div>
+    <p>
+        A database of osu! tournaments, mappools, and users. Search for and discover mappools/tournaments,
+        see most favorited and trending mappools/tournaments, see a user's tournament staffing history, and more!
+    </p>
+</div>
 
 {% endblock body %}
