@@ -305,6 +305,8 @@ export class APIManager {
      * Get list of tournaments by page
      * 
      * @param page - page to index
+     * @param sort - sort to index by
+     * @param query - string query to search with
      * @returns list of tournaments and total pages if success, otherwise undefined
      */
     public async getTournaments(page: number, sort: ListingSortType, query: string): Promise<TournamentsResponse | undefined> {
