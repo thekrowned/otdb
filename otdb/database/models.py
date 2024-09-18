@@ -322,7 +322,7 @@ class Tournament(models.Model):
             if len(batch_users) != len(batch):
                 raise ClientException(
                     f"Invalid user id(s): "
-                    f"{', '.join(map(str, find_invalids(user_ids, batch_users, lambda id, u: u.id == id)))}"
+                    f"{', '.join(map(str, find_invalids(batch_users, user_ids, lambda u, id: u.id == id)))}"
                 )
 
             users += sorted(batch_users, key=lambda u: user_ids.index(u.id))
