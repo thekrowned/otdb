@@ -85,11 +85,11 @@ export function createListing<T>(
     ];
 
     for (const option of sortOptions) {
-        if (sort === option.innerText.toLowerCase()) {
+        if (sort === option.id.split("-")[0]) {
             switchSort(option);
         }
         option.addEventListener("click", () => {
-            sort = option.innerText.toLowerCase();
+            sort = option.id.split("-")[0];
             switchSort(option);
         });
     }
