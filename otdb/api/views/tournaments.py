@@ -1,5 +1,4 @@
 from django.http import Http404
-from django.contrib.postgres.search import SearchVector, SearchQuery
 
 from ..serializers import *
 from .util import *
@@ -58,7 +57,7 @@ async def tournaments(req, id=None):
         return JsonResponse(tournament, safe=False) if tournament is not None else \
             error("invalid tournament id", 404)
 
-    tournament_list, total = await get_listing_from_params(
+    tournament_list, total_pages = await get_listing_from_params(
         Tournament,
         ("name", "abbreviation", "description"),
         req
@@ -69,7 +68,7 @@ async def tournaments(req, id=None):
             tournament_list,
             many=True
         ).serialize(include=["favorite_count"]),
-        "total_pages": (total - 1) // 20 + 1
+        "total_pages": total_pages
     }, safe=False)
 
 

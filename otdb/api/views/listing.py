@@ -27,7 +27,10 @@ def get_listing(model: _T, search_fields: Iterable[str], page: int, query: str, 
         query_set = query_set.annotate(search=q).filter(search=search.SearchQuery(query))
         count_query_set = count_query_set.annotate(search=q).filter(search=search.SearchQuery(query))
 
-    return list(query_set.order_by(sort)[offset:offset + limit]), count_query_set.count()
+    return (
+        list(query_set.order_by(sort)[offset:offset + limit]),
+        (count_query_set.count() - 1) // LISTING_ITEMS_PER_PAGE + 1
+    )
 
 
 async def get_recent_listing(model: _T, search_fields: Iterable[str], page: int, query: str) -> tuple[list[_T], int]:

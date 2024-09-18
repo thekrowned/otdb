@@ -60,7 +60,7 @@ async def mappools(req, mappool_id=None):
         return JsonResponse(mappool, safe=False) if mappool is not None else \
             error("invalid mappool id", 404)
 
-    mappool_list, total = await get_listing_from_params(
+    mappool_list, total_pages = await get_listing_from_params(
         Mappool,
         (
             "name",
@@ -78,7 +78,7 @@ async def mappools(req, mappool_id=None):
                 mappool_list,
                 many=True
             ).serialize(include=["favorite_count"]),
-            "total_pages": (total - 1) // 20 + 1
+            "total_pages": total_pages
         },
         safe=False
     )
