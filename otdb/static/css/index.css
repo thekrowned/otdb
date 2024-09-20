@@ -1,6 +1,8 @@
 .index-container {
     width: calc(100% - 20px);
+    max-width: 800px;
     padding: 10px;
+    margin: auto;
 
     display: flex;
     flex-direction: column;
