@@ -80,7 +80,7 @@ export function createListing<T>(
 
     const sortOptions = [
         document.getElementById("recent-sort"),
-        document.getElementById("favorite-sort"),
+        document.getElementById("favorites-sort"),
         document.getElementById("trending-sort")
     ];
 
