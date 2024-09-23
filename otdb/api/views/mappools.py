@@ -89,6 +89,7 @@ async def mappools(req, mappool_id=None):
     DictionaryType({
         "id": IntegerType(minimum=0, optional=True),
         "name": StringType(range(1, 65)),
+        "description": StringType(range(0, 513), optional=True),
         "beatmaps": ListType(
             DictionaryType({
                 "id": IntegerType(minimum=0),
@@ -126,7 +127,15 @@ async def create_mappool(req, data):
         if mappool.submitted_by_id != user.id:
             return error("Cannot edit a mappool not submitted by you", 403)
 
-    mappool = await Mappool.new(data["name"], user, beatmap_ids, slots, mods, mappool_id=data.get("id") or 0)
+    mappool = await Mappool.new(
+        data["name"],
+        data.get("description") or "",
+        user,
+        beatmap_ids,
+        slots,
+        mods,
+        mappool_id=data.get("id") or 0
+    )
 
     serializer = MappoolSerializer(mappool)
     return JsonResponse(serializer.serialize(), safe=False)

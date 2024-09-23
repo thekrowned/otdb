@@ -1,5 +1,5 @@
 import jsx from "../jsxFactory";
-import {getElementByIdOrThrow, removeChildren} from "../common/util";
+import {escapeHtml, getElementByIdOrThrow, removeChildren} from "../common/util";
 import {ListingSortType} from "../common/api";
 import {createPageNavigator, onPageClick} from "../common/navigation";
 import {setDelayedTypeable} from "../common/interactions";
@@ -11,7 +11,7 @@ export function createListingItem(id: number, title: string, favoriteCount: numb
     return (
         <div class="listing-item-container">
             <a href={`/db/${dbName}/${id}`} style="flex-grow: 1;">
-                <p class="listing-item-title">{title}</p>
+                <p class="listing-item-title">{escapeHtml(title)}</p>
             </a>
             <hr></hr>
             <div class="listing-item-info">

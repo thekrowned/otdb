@@ -6,7 +6,7 @@ import {
     User
 } from "../common/api";
 import { ElementsManager } from "../common/elements";
-import { getElementByIdOrThrow } from "../common/util";
+import {escapeHtml, getElementByIdOrThrow} from "../common/util";
 import { ROLES_SORT, VALID_ROLES } from "../common/constants";
 import jsx from "../jsxFactory";
 import { setHoldClick } from "../common/interactions";
@@ -67,12 +67,12 @@ export function tournamentSetup() {
         if (!link)
             return <p class="tournament-item">
                 <span class="tournament-item-label">{label}: </span>
-                {value}
+                {escapeHtml(value)}
             </p>;
         else
             return <p class="tournament-item">
                 <span class="tournament-item-label">{label}: </span>
-                <a href={value} target="_blank">{value}</a>
+                <a href={value} target="_blank">{escapeHtml(value)}</a>
             </p>;
     }
 
@@ -96,7 +96,7 @@ export function tournamentSetup() {
                     {users.map((user) => <a href={`/users/${user.id}`}>
                         <div class="tournament-staff">
                             <img class="tournament-staff-avatar" src={user.avatar}></img>
-                            {user.username}
+                            {escapeHtml(user.username)}
                         </div>
                     </a>)}
                 </div>

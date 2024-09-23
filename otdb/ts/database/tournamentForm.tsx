@@ -1,6 +1,6 @@
 import { ElementsManager } from "../common/elements";
 import {TextButton, TextDropdown, TextInput, TextSearch} from "../common/form";
-import {getElementByIdOrThrow, parseRolesFlag} from "../common/util";
+import {askBeforeLeaving, getElementByIdOrThrow, parseRolesFlag} from "../common/util";
 import {ROLES_SORT, VALID_ROLES} from "../common/constants";
 import { TournamentExtended } from "../common/api";
 import jsx from "../jsxFactory";
@@ -19,6 +19,8 @@ export function tournamentFormSetup(editing: boolean) {
     nameInput.resize(300);
     abbrInput.resize(200);
     descriptionInput.resize(300);
+
+    let disableLeavePrompt = false;
 
     function onSubmit() {
         manager.inputs.submit.disable();
@@ -58,6 +60,7 @@ export function tournamentFormSetup(editing: boolean) {
             if (data === undefined) {
                 manager.inputs.submit.enable();
             } else {
+                disableLeavePrompt = true;
                 window.location.replace(`/db/tournaments/${data.id}/`);
             }
         });
@@ -172,6 +175,8 @@ export function tournamentFormSetup(editing: boolean) {
 
     addMappool.addCallback(addMappoolInputs);
     manager.inputs.submit.addCallback(onSubmit);
+
+    askBeforeLeaving(() => !disableLeavePrompt);
 
     var tournamentData: TournamentExtended | null = null;
 

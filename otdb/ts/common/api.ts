@@ -72,6 +72,7 @@ export interface MappoolBeatmapConnection {
 export interface Mappool {
     id: number;
     name: string;
+    description: string;
     submitted_by_id: number;
     avg_star_rating: number;
 }
@@ -100,6 +101,7 @@ export interface MappoolBeatmapPayload {
 export interface MappoolPayload {
     id?: number;
     name: string;
+    description?: string | null;
     beatmaps: MappoolBeatmapPayload[];
 }
 

@@ -1,4 +1,4 @@
-import { getElementByIdOrThrow, formatLength } from "../common/util";
+import {getElementByIdOrThrow, formatLength, escapeHtml} from "../common/util";
 import { ElementsManager } from "../common/elements";
 import {BeatmapsetMetadata, MappoolExtended, MappoolBeatmap, MappoolBeatmapConnection} from "../common/api";
 import { getStarRatingColor } from "../common/util";
@@ -164,7 +164,7 @@ function createDifficultyContainer(beatmap: MappoolBeatmap): HTMLDivElement {
 
     const difficulty = document.createElement("p");
     difficulty.classList.add("difficulty");
-    difficulty.innerHTML = beatmap.beatmap_metadata.difficulty;
+    difficulty.innerHTML = escapeHtml(beatmap.beatmap_metadata.difficulty);
     starRatingDiffContainer.appendChild(difficulty);
 
     const attributesContainer = document.createElement("div");
@@ -202,17 +202,17 @@ function createMetadataContainer(metadata: BeatmapsetMetadata): HTMLDivElement {
 
     const title = document.createElement("p");
     title.classList.add("title");
-    title.innerHTML = metadata.title;
+    title.innerHTML = escapeHtml(metadata.title);
     row1.appendChild(title);
 
     const artist = document.createElement("p")
     artist.classList.add("artist");
-    artist.innerHTML = metadata.artist;
+    artist.innerHTML = escapeHtml(metadata.artist);
     row2.appendChild(artist);
 
     const mapper = document.createElement("p");
     mapper.classList.add("mapper");
-    mapper.innerHTML = metadata.creator;
+    mapper.innerHTML = escapeHtml(metadata.creator);
     row2.appendChild(mapper);
 
     return container;
@@ -236,7 +236,7 @@ function createBeatmapCover(bmSlot: string, beatmapsetId: number): HTMLDivElemen
 
     const slot = document.createElement("p");
     slot.classList.add("modification");
-    slot.innerHTML = bmSlot;
+    slot.innerHTML = escapeHtml(bmSlot);
     fade.appendChild(slot);
 
     return wrapper;
@@ -249,6 +249,7 @@ export function mappoolSetup() {
     const deleteBtn = getElementByIdOrThrow("delete-btn");
     const mappoolContainer = getElementByIdOrThrow("mappool-container");
     const mappoolName = getElementByIdOrThrow("mappool-name");
+    const mappoolDescription = getElementByIdOrThrow("mappool-description");
 
     if (favoriteSvg === null) {
         throw new Error("why is the star svg gone ????");
@@ -353,7 +354,8 @@ export function mappoolSetup() {
             }
         }
     
-        mappoolName.innerHTML = data.name;
+        mappoolName.innerHTML = escapeHtml(data.name);
+        mappoolDescription.innerHTML = "<span class='description'>Description: </span>"+escapeHtml(data.description);
     
         const abcSortedBeatmaps = data.beatmap_connections.sort((a, b) => a.slot.charCodeAt(0) - b.slot.charCodeAt(0));
         const getSlotOrderIndex = (a) => {

@@ -88,3 +88,21 @@ export function * parseRolesFlag(flag: number): Generator<string> {
 export function clamp(value: number, min: number, max: number) {
     return Math.min(max, Math.max(min, value));
 }
+
+export function askBeforeLeaving(check: () => boolean) {
+    window.addEventListener("beforeunload", (evt) => {
+        if (check()) {
+            evt.preventDefault();
+            return "";
+        }
+    });
+}
+
+export function escapeHtml(unsafe: string) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }

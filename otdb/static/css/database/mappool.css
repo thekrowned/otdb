@@ -10,6 +10,10 @@
     color: white;
 }
 
+#mappool-description {
+    margin-bottom: 10px;
+}
+
 .star-container:hover {
     background-color: rgba(0, 0, 0, 0.2);
     cursor: pointer;

@@ -1,5 +1,6 @@
 CREATE OR REPLACE FUNCTION public.new_mappool(
 	v_title text,
+    v_description text,
 	n_submitted_by integer,
     r_slots varchar(8)[],
 	r_mpbm database_mappoolbeatmap[],
@@ -35,17 +36,20 @@ n_i := 1;
 -- If not editing a mappool
 IF n_existing_id = 0 THEN
 	INSERT INTO database_mappool (
-		name, 
+		name,
+	    description,
 		submitted_by_id,
 		avg_star_rating
 	) VALUES (
 		v_title,
+	    v_description,
 		n_submitted_by,
 		n_avg_sr
 	) RETURNING id INTO n_mp_id;
 ELSE
 	UPDATE database_mappool SET
 		name = v_title,
+		description = v_description,
 		avg_star_rating = n_avg_sr
 	WHERE id = n_existing_id;
     -- Easier to delete all connections and recreate new ones

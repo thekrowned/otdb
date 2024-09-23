@@ -1,6 +1,6 @@
 import { ElementsManager } from '../common/elements';
 import { TextInput, TextButton, TextDropdown } from '../common/form';
-import { getElementByIdOrThrow } from '../common/util';
+import {askBeforeLeaving, getElementByIdOrThrow} from '../common/util';
 import { MappoolPayload, MappoolBeatmapPayload, MappoolExtended } from "../common/api";
 import { ValidMod, VALID_MODS } from '../common/constants';
 import jsx from "../jsxFactory";
@@ -31,6 +31,7 @@ function getMappoolBeatmaps(): Array<MappoolBeatmapPayload> {
 
 export function mappoolFormSetup(editing: boolean) {
     const nameInput = manager.inputs.getRequired<TextInput>("name-input");
+    const descriptionInput = manager.inputs.getRequired<TextInput>("description-input");
     const addBeatmapBtn = manager.inputs.getRequired<TextButton>("add-beatmap");
     const openQuickAddBtn = manager.inputs.getRequired<TextButton>("quick-add-beatmaps");
 
@@ -81,6 +82,8 @@ export function mappoolFormSetup(editing: boolean) {
         onCloseQuickAdd();
     }
 
+    let disableLeavePrompt = false;
+
     function onSubmitBeatmaps() {
         manager.inputs.submit.disable();
         document.body.style.cursor = "wait";
@@ -88,6 +91,7 @@ export function mappoolFormSetup(editing: boolean) {
         const data: MappoolPayload = {
             id: mappoolData?.id,
             name: nameInput.getValue(),
+            description: descriptionInput.getValue(),
             beatmaps: getMappoolBeatmaps()
         };
         manager.api.newMappool(data).then(
@@ -96,6 +100,7 @@ export function mappoolFormSetup(editing: boolean) {
                     manager.inputs.submit.enable();
                     document.body.style.cursor = "default";
                 } else {
+                    disableLeavePrompt = true;
                     window.location.replace(`/db/mappools/${data.id}/`);
                 }
             }
@@ -184,6 +189,8 @@ export function mappoolFormSetup(editing: boolean) {
     quickAddBeatmapsBtn.addCallback(onQuickAddBeatmaps);
     manager.inputs.submit.addCallback(onSubmitBeatmaps);
     manager.backdrop.addCallback(onCloseQuickAdd);
+
+    askBeforeLeaving(() => !disableLeavePrompt);
 
     var mappoolData: null | MappoolExtended = null;
 

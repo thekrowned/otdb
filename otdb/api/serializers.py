@@ -111,7 +111,7 @@ class TournamentInvolvementSerializer(metaclass=SerializerMeta):
 
 class MappoolSerializer(metaclass=SerializerMeta):
     model = Mappool
-    fields = ["id", "name", "submitted_by_id", "avg_star_rating"]
+    fields = ["id", "name", "description", "submitted_by_id", "avg_star_rating"]
 
 
 class BeatmapMetadataSerializer(metaclass=SerializerMeta):

@@ -186,6 +186,7 @@ class MappoolBeatmapConnection(models.Model):
 
 class Mappool(models.Model):
     name = models.CharField(max_length=64)
+    description = models.CharField(max_length=512, default="")
     beatmaps = models.ManyToManyField(MappoolBeatmap, "mappools", through=MappoolBeatmapConnection)
     submitted_by = models.ForeignKey(OsuUser, models.PROTECT, related_name="submitted_mappools")
     favorites = models.ManyToManyField(OsuUser, through="MappoolFavorite", related_name="mappool_favorites")
@@ -195,10 +196,11 @@ class Mappool(models.Model):
         super().__init__(*args, **kwargs)
 
     @staticmethod
-    def _new_mappool(cls, id: int, name: str, slots: list[str], submitted_by: OsuUser, data):
+    def _new_mappool(cls, id: int, name: str, description: str, slots: list[str], submitted_by: OsuUser, data):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT \"new_mappool\"(%s, %d, ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], %d)" % (
+            cursor.execute("SELECT \"new_mappool\"(%s, %s, %d, ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], %d)" % (
                 sql_s(name),
+                sql_s(description),
                 submitted_by.id,
                 ",".join(map(sql_s, slots)),
                 *map(",".join, unzip(data)),
@@ -210,6 +212,7 @@ class Mappool(models.Model):
     async def new(
         cls,
         name: str,
+        description: str,
         submitted_by: OsuUser,
         beatmap_ids: list[int],
         slots: list[str],
@@ -241,7 +244,7 @@ class Mappool(models.Model):
             for i in range(len(beatmaps))
         ))
 
-        return await sync_to_async(cls._new_mappool)(cls, mappool_id, name, slots, submitted_by, data)
+        return await sync_to_async(cls._new_mappool)(cls, mappool_id, name, description, slots, submitted_by, data)
 
     async def is_favorited(self, user_id: int):
         return await MappoolFavorite.objects.filter(mappool_id=self.id, user_id=user_id).acount() > 0
