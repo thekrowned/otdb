@@ -611,8 +611,10 @@ export class TextDropdownItem<T = null> {
             if (value) {
                 this.elm.classList.add("hidden");
                 this.pickedElm = this.createPickedElm();
-            } else
+            } else {
                 this.elm.classList.remove("hidden");
+                this.pickedElm.remove();
+            }
         }
 
         this._picked = value;
