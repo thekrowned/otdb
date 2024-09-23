@@ -49,7 +49,7 @@ inner-form-input {
     font-size: 16px;
 }
 
-.dropdown-item:hover {
+.dropdown-item.active {
     cursor: pointer;
     background-color: var(--hover-bg-color1);
 }

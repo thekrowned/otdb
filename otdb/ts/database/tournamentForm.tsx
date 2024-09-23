@@ -1,5 +1,5 @@
 import { ElementsManager } from "../common/elements";
-import { TextButton, TextDropdown, TextInput } from "../common/form";
+import {TextButton, TextDropdown, TextInput, TextSearch} from "../common/form";
 import {getElementByIdOrThrow, parseRolesFlag} from "../common/util";
 import {ROLES_SORT, VALID_ROLES} from "../common/constants";
 import { TournamentExtended } from "../common/api";
@@ -24,7 +24,7 @@ export function tournamentFormSetup(editing: boolean) {
         manager.inputs.submit.disable();
 
         const userIds = manager.inputs.query<TextInput>("user-id-input-");
-        const mappoolIds = manager.inputs.query<TextInput>("mappool-id-input-");
+        const mappoolIds = manager.inputs.query<TextSearch<number>>("mappool-input-");
         const nameOverrides = manager.inputs.query<TextInput>("name-override-id-input-");
 
         const staff: {[id: string]: number} = {};
@@ -51,7 +51,7 @@ export function tournamentFormSetup(editing: boolean) {
                 ([id, roles]) => ({id: parseInt(id), roles: roles})
             ),
             mappools: mappoolIds.map((mappoolId, i) => ({
-                id: parseInt(mappoolId.getValue()),
+                id: mappoolId.getInnerValues()[0],
                 name_override: nameOverrides[i].getValue() === "" ? null : nameOverrides[i].getValue()
             }))
         }).then((data) => {
@@ -96,16 +96,21 @@ export function tournamentFormSetup(editing: boolean) {
 
     var mappoolIdIncrement = 0;
 
-    function addMappoolInputs(): {mappoolId: TextInput, nameOverride: TextInput} {
+    function addMappoolInputs(): {mappool: TextSearch<number>, nameOverride: TextInput} {
         const inputContainer = document.createElement("div");
         inputContainer.classList.add("input-container", "prevent-select");
 
-        const mappoolIdInput = manager.inputs.create<TextInput>(`mappool-id-input-${mappoolIdIncrement}`, {
-            type: "text",
-            label: "Mappool ID",
-            validation: "uint",
-            required: true
+        const mappoolInput = manager.inputs.create<TextSearch<number>>(`mappool-input-${mappoolIdIncrement}`, {
+            type: "text-search",
+            label: "Mappool",
+            required: true,
+            multi: false,
+            options: []
         }, inputContainer);
+        mappoolInput.bindSearch(async (query) => {
+            const result = await manager.api.getMappools(1, "favorites", query);
+            return result.data.map((m) => ({label: m.name, value: m.id}));
+        });
 
         const nameOverrideInput = manager.inputs.create<TextInput>(`name-override-id-input-${mappoolIdIncrement}`, {
             type: "text",
@@ -120,7 +125,7 @@ export function tournamentFormSetup(editing: boolean) {
         }, inputContainer);
 
         removeBtn.addCallback(() => {
-            manager.inputs.remove(mappoolIdInput.id);
+            manager.inputs.remove(mappoolInput.id);
             manager.inputs.remove(nameOverrideInput.id);
             manager.inputs.remove(removeBtn.id);
             inputContainer.remove();
@@ -131,7 +136,7 @@ export function tournamentFormSetup(editing: boolean) {
         usersSection.insertBefore(inputContainer, staffLabel);
 
         return {
-            mappoolId: mappoolIdInput,
+            mappool: mappoolInput,
             nameOverride: nameOverrideInput
         };
     }
@@ -189,7 +194,8 @@ export function tournamentFormSetup(editing: boolean) {
 
         for (const conn of tournamentData.mappool_connections) {
             const inputs = addMappoolInputs();
-            inputs.mappoolId.setValue(conn.mappool_id.toString());
+            const item = inputs.mappool.createItem(conn.mappool.name, conn.mappool_id);
+            item.pick();
             if (conn.name_override !== null)
                 inputs.nameOverride.setValue(conn.name_override);
         }

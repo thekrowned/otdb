@@ -1,13 +1,13 @@
 import jsx from "../jsxFactory";
 
-import { createXSVG } from "./util";
+import {clamp, createXSVG} from "./util";
 
 // types
 
 type ValidationType = "any" | "int" | "uint" | "mod" | null;
 type ValidationFn = (text: string) => boolean;
 
-export type InputType = "text" | "button" | "text-dropdown";
+export type InputType = "text" | "button" | "text-dropdown" | "text-search";
 
 interface InputAttributes {
     type: InputType;
@@ -32,13 +32,21 @@ interface TextButtonAttributes extends InputAttributes {
     square?: boolean;
 }
 
-interface TextDropdownAttributes extends BaseTextInputAttributes {
-    type: "text-dropdown";
+interface BaseTextDropdownAttributes extends BaseTextInputAttributes {
     options: string[];
     multi?: boolean;
 }
 
-export type GetInputAttributes<T> = 
+interface TextDropdownAttributes extends BaseTextDropdownAttributes {
+    type: "text-dropdown";
+}
+
+interface TextSearchAttributes extends BaseTextDropdownAttributes {
+    type: "text-search";
+}
+
+export type GetInputAttributes<T> =
+    T extends TextSearch<any> ? TextSearchAttributes :
     T extends TextDropdown ? TextDropdownAttributes :
     T extends TextInput ? TextInputAttributes :
     T extends TextButton ? TextButtonAttributes :
@@ -50,7 +58,8 @@ function inputFromType<T extends Input>(type: InputType, elm: HTMLElement): T {
     const input = {
         "text": TextInput,
         "text-dropdown": TextDropdown,
-        "button": TextButton
+        "button": TextButton,
+        "text-search": TextSearch
     }[type];
 
     if (input === undefined)
@@ -303,7 +312,7 @@ export class TextInput extends Input {
         this.isRequired = elm.hasAttribute("required");
         this.maxLength = maxLength;
 
-        this.input.addEventListener("input", (evt) => this.onInputChange(evt));
+        this.input.addEventListener("input", (evt: InputEvent) => this.onInputChange(evt));
         this.input.addEventListener("focus", () => {
             this.label.classList.add("active");
             this.input.focus();
@@ -315,7 +324,7 @@ export class TextInput extends Input {
         });
     }
 
-    protected override onInputChange(evt: Event | null) {
+    protected override onInputChange(evt: InputEvent | null) {
         const isValid = this.input.value === "" ? true : (
             (this.maxLength === null || this.input.value.length <= this.maxLength) &&
             (this.validation === null || this.validation(this.input.value))
@@ -386,14 +395,22 @@ export class TextInput extends Input {
     }
 }
 
-export class TextDropdown extends TextInput {
+export class TextDropdown<T = null> extends TextInput {
     static type: InputType = "text-dropdown";
 
     protected dropdown: HTMLDivElement;
     protected inputContainer: HTMLDivElement;
     protected multiAnswer: boolean;
-    
-    public items: TextDropdownItem[];
+    protected activeItem: number | null = null;
+    protected _items: TextDropdownItem<T>[];
+
+    public get items(): TextDropdownItem<T>[] {
+        return this._items;
+    }
+
+    protected set items(value: TextDropdownItem<T>[]) {
+        this._items = value;
+    }
 
     public constructor(elm: HTMLElement) {
         super(elm);
@@ -410,16 +427,13 @@ export class TextDropdown extends TextInput {
         this.multiAnswer = elm.hasAttribute("multi");
         this.items = [];
 
-        this.validation = (text) => {
-            let isValid = false;
+        this.validation = () => {
             for (const item of this.items) {
-                // no break to make sure all items are called
-                if (item.isValid(text)) {
-                    isValid = true;
-                }
+                if (item.valid)
+                    return true;
             }
 
-            return isValid;
+            return false;
         }
 
         const options = elm.getAttribute("options")?.split(",");
@@ -429,20 +443,53 @@ export class TextDropdown extends TextInput {
             }
         }
 
-        this.input.addEventListener("focus", () => {
-            this.dropdown.classList.remove("hidden");
-        });
-        this.input.addEventListener("blur", () => {
-            this.dropdown.classList.add("hidden");
-        });
+        this.input.addEventListener("focus", () => this.dropdown.classList.remove("hidden"));
+        this.input.addEventListener("blur", () => this.dropdown.classList.add("hidden"));
+        this.input.addEventListener("keydown", (evt: KeyboardEvent) => this.handleKeydown(evt));
     }
 
-    protected override onInputChange(evt: Event | null) {
-        super.onInputChange(evt);
+    protected override onInputChange(evt: InputEvent | null) {
+        for (const item of this.items)
+            item.onInputChange(this.input.value);
 
-        if (this.getValue() === "") {
-            (this.validation as ValidationFn)("") // unhide dropdown container
+        super.onInputChange(evt);
+    }
+
+    private getPickableItems(): TextDropdownItem<T>[] {
+        return this.items.filter((item) => !item.picked);
+    }
+
+    private handleKeydown(evt: KeyboardEvent) {
+        if (evt.code === "ArrowDown") {
+            this.setActiveItem((this.activeItem ?? -1) + 1);
+        } else if (evt.code === "ArrowUp") {
+            this.setActiveItem((this.activeItem ?? 1) - 1);
+        } else if (evt.code === "Enter") {
+            if (this.activeItem !== null)
+                this.getPickableItems()[this.activeItem].pick();
+        } else {
+            return;
         }
+
+        evt.preventDefault();
+    }
+
+    private setActiveItem(i: number) {
+        const items = this.getPickableItems();
+
+        if (items.length === 0) {
+            this.activeItem = null;
+            return;
+        }
+
+        if (this.activeItem !== null)
+            items[this.activeItem].removeActive();
+
+        this.activeItem = clamp(i, 0, items.length-1);
+        items[this.activeItem].setActive();
+        this.dropdown.scroll({
+            top: items[this.activeItem].getYScrollTo(this.dropdown)
+        });
     }
 
     protected isEmpty(): boolean {
@@ -451,7 +498,7 @@ export class TextDropdown extends TextInput {
         }
 
         for (const item of this.items) {
-            if (item.isPicked()) {
+            if (item.picked) {
                 return false;
             }
         }
@@ -459,75 +506,42 @@ export class TextDropdown extends TextInput {
         return true;
     }
 
-    public onItemPicked(item: TextDropdownItem) {
+    private onItemPicked(item: TextDropdownItem<T>) {
         if (this.multiAnswer) {
-            const container = document.createElement("div");
-            container.classList.add("dropdown-multi-answer-container");
-
-            const answer = document.createElement("p");
-            answer.innerHTML = item.getLabel();
-            answer.classList.add("dropdown-multi-answer");
-
-            const removeAnswer = document.createElement("div");
-            removeAnswer.classList.add("dropdown-multi-answer-remove");
-
-            const x = createXSVG();
-            x.setAttribute("width", "10px");
-            x.setAttribute("height", "10px");
-            x.classList.add("dropdown-multi-answer-svg");
-            removeAnswer.append(x);
-
-            container.append(answer, removeAnswer);
-
-            removeAnswer.addEventListener("click", () => {
-                this.onItemRemoved(item, container);
-            });
-
-            this.inputContainer.insertBefore(container, this.input);
+            this.inputContainer.insertBefore(item.pickedElm, this.input);
 
             this.setValue("");
         } else {
-            this.setValue(item.getLabel());
+            this.setValue(item.label);
             this.blur();
         }
-
-        item.isValid(this.getValue()); // hide option
-    }
-
-    public onItemRemoved(item: TextDropdownItem, container: HTMLDivElement) {
-        container.remove();
-        item.onRemoved();
-        item.isValid(this.getValue()); // unhide if valid
-        if (this.isEmpty()) {
-            // unactivate label
-            this.label.classList.remove("active");
-        }
-    }
-
-    /**
-     * Add an item from an object
-     * 
-     * @param item - item object
-     */
-    public addItem(item: TextDropdownItem) {
-        this.items.push(item);
     }
 
     /**
      * Create an item on the dropdown from a label
      * 
      * @param label - label of new item
+     * @param value - inner value of the item
      * @returns the new item object
      */
-    public createItem(label: string): TextDropdownItem {
-        const item = <div class="dropdown-item">{label}</div> as HTMLDivElement;
+    public createItem(label: string, value: T = null): TextDropdownItem<T> {
+        const item = new TextDropdownItem<T>(
+            label,
+            this.multiAnswer,
+            (item) => this.onItemPicked(item),
+            value
+        );
 
-        this.dropdown.appendChild(item);
+        this.dropdown.append(item.elm);
+        this.items.push(item);
 
-        const itemObj = new TextDropdownItem(this, item);
-        this.addItem(itemObj);
+        item.elm.addEventListener("mouseover", () => {
+            item.setActive();
+            this.activeItem = this.items.indexOf(item);
+        });
+        item.elm.addEventListener("mouseleave", () => item.removeActive());
 
-        return itemObj;
+        return item;
     }
 
     /**
@@ -536,9 +550,9 @@ export class TextDropdown extends TextInput {
      * @param label - label of item
      * @returns item object or null if it's not found
      */
-    public getItem(label: string): TextDropdownItem | null {
+    public getItem(label: string): TextDropdownItem<T> | null {
         for (const item of this.items) {
-            if (item.getLabel() === label) {
+            if (item.label === label) {
                 return item;
             }
         }
@@ -547,69 +561,217 @@ export class TextDropdown extends TextInput {
     }
 
     /**
+     * Clear all items in the dropdown
+     */
+    public clearItems() {
+        for (const item of this.items)
+            item.onRemoved();
+
+        this.items = [];
+        this.activeItem = null;
+    }
+
+    /**
      * Get list of labels for currently picked items
      * 
      * @returns list of labels
      */
     public getValues(): string[] {
-        return this.items.filter((item) => item.isPicked()).map((item) => item.getLabel());
+        return this.items.filter((item) => item.picked).map((item) => item.label);
+    }
+
+    /**
+     * Get list of values for currently picked items
+     *
+     * @returns list of values T
+     */
+    public getInnerValues(): T[] {
+        return this.items.filter((item) => item.picked).map((item) => item.value);
     }
 }
 
-export class TextDropdownItem {
-    protected parent: TextDropdown;
-    protected elm: HTMLDivElement;
-    protected picked: boolean = false;
+export class TextDropdownItem<T = null> {
+    private _elm: HTMLDivElement;
+    private multi: boolean;
+    private _picked: boolean = false;
+    private _value: T | null = null;
+    private _valid: boolean = false;
+    private _pickedElm: HTMLElement;
 
-    public constructor(parent: TextDropdown, elm: HTMLDivElement) {
-        this.parent = parent;
-        this.elm = elm;
-
-        this.elm.onmousedown = (evt) => {
-            evt.preventDefault();
-        }
-
-        this.elm.onclick = () => {
-            this.picked = true;
-            this.parent.onItemPicked(this);
-        }
+    public get elm(): HTMLDivElement {
+        return this._elm;
     }
 
-    /**
-     * Get the label of this item
-     * 
-     * @returns label
-     */
-    public getLabel(): string {
+    public get picked(): boolean {
+        return this._picked;
+    }
+
+    protected set picked(value: boolean) {
+        if (this.multi) {
+            if (value) {
+                this.elm.classList.add("hidden");
+                this.pickedElm = this.createPickedElm();
+            } else
+                this.elm.classList.remove("hidden");
+        }
+
+        this._picked = value;
+    }
+
+    public get value(): T | null {
+        return this._value;
+    }
+
+    protected set value(value: T | null) {
+        this._value = value;
+    }
+
+    public get valid(): boolean {
+        return this._valid;
+    }
+
+    protected set valid(value: boolean) {
+        this._valid = value;
+    }
+
+    public get label(): string {
         return this.elm.innerHTML;
     }
 
-    /**
-     * Check if this item is picked
-     * 
-     * @returns true if item is picked
-     */
-    public isPicked(): boolean {
-        return this.picked;
+    public get pickedElm(): HTMLElement {
+        return this._pickedElm;
     }
 
-    public isValid(text: string) {
-        const isValid = text === "" ? true : this.getLabel().toLowerCase().includes(text.toLowerCase());
-        if (isValid && !this.picked) {
+    protected set pickedElm(value: HTMLDivElement) {
+        this._pickedElm = value;
+    }
+
+    public constructor(
+        label: string,
+        multi: boolean,
+        onItemPicked: (item: TextDropdownItem<T>) => void,
+        innerValue: T | null = null
+    ) {
+        this._elm = <div class="dropdown-item">{label}</div> as HTMLDivElement;
+        this.multi = multi;
+        this.value = innerValue;
+
+        // prevents dropdown from closing before click goes through
+        this.elm.addEventListener("mousedown", (evt) => evt.preventDefault());
+        this.elm.addEventListener("click", () => {
+            this.onPicked();
+            onItemPicked(this);
+        });
+    }
+
+    public onInputChange(text: string) {
+        if (!this.multi && this.picked && text !== this.label)
+            this.unpick();
+
+        this.valid = text === "" ? true : this.label.toLowerCase().includes(text.toLowerCase());
+        if (this.valid && !this.picked) {
             this.elm.classList.remove("hidden");
         } else {
             this.elm.classList.add("hidden");
         }
-
-        return isValid;
     }
 
-    public onRemoved() {
-        this.picked = false;
+    private createPickedElm(): HTMLDivElement {
+        const container = (
+            <div class="dropdown-multi-answer-container">
+                <p class="dropdown-multi-answer">{this.label}</p>
+            </div>
+        ) as HTMLDivElement;
+
+        const removeAnswer = <div class="dropdown-multi-answer-remove"></div>;
+
+        const x = createXSVG();
+        x.setAttribute("width", "10px");
+        x.setAttribute("height", "10px");
+        x.classList.add("dropdown-multi-answer-svg");
+
+        removeAnswer.append(x);
+        container.append(removeAnswer);
+
+        removeAnswer.addEventListener("click", () => this.unpick());
+
+        return container;
+    }
+
+    private onPicked() {
+        this.picked = true;
     }
 
     public pick() {
         this.elm.click();
+    }
+
+    public unpick() {
+        this.picked = false;
+    }
+
+    public onRemoved() {
+        this.elm.remove();
+    }
+
+    public setActive() {
+        this.elm.classList.add("active");
+    }
+
+    public removeActive() {
+        this.elm.classList.remove("active");
+    }
+
+    public getYScrollTo(dropdown: HTMLElement): number {
+        return this.elm.getBoundingClientRect().y - dropdown.getBoundingClientRect().y;
+    }
+}
+
+type TextSearchFunc<T> = (query: string) => Promise<{label: string, value: T}[]>;
+
+export class TextSearch<T> extends TextDropdown<T> {
+    static type: InputType = "text-search";
+
+    private search: TextSearchFunc<T>;
+    private currentSearch: number | null = null;
+
+    public constructor(elm: HTMLElement) {
+        super(elm);
+
+        this.validation = () => true;
+    }
+
+    public bindSearch(func: TextSearchFunc<T>) {
+        this.search = func;
+    }
+
+    protected override onInputChange(evt: InputEvent | null) {
+        super.onInputChange(evt);
+
+        if (this.currentSearch)
+            clearTimeout(this.currentSearch)
+
+        for (const item of this.items) {
+            if (item.picked) {
+                return;
+            }
+        }
+
+        this.clearItems();
+
+        if (this.input.value.trim().length > 0)
+            this.currentSearch = setTimeout(() => {
+                this.search(this.input.value).then((result) => this.handleSearchResult(result));
+                this.currentSearch = null;
+            }, 500);
+    }
+
+    private handleSearchResult(result: {label: string, value: T}[]) {
+        this.clearItems();
+
+        for (const item of result) {
+            this.createItem(item.label, item.value);
+        }
     }
 }
 

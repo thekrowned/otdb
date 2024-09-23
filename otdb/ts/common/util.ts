@@ -84,3 +84,7 @@ export function * parseRolesFlag(flag: number): Generator<string> {
             yield VALID_ROLES[i];
     }
 }
+
+export function clamp(value: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, value));
+}

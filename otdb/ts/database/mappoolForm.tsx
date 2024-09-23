@@ -200,7 +200,7 @@ export function mappoolFormSetup(editing: boolean) {
             bmInputs.id.setValue(beatmap.beatmap_metadata.id.toString());
             for (const mod of beatmap.mods) {
                 for (const item of bmInputs.mods.items) {
-                    if (item.getLabel() === mod.acronym) {
+                    if (item.label === mod.acronym) {
                         item.pick();
                         break;
                     }
