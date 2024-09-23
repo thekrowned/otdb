@@ -10,6 +10,7 @@
 
 .tournament-item {
     text-wrap: wrap;
+    word-wrap: break-word;
 }
 
 .tournament-item-label {
