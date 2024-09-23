@@ -355,7 +355,8 @@ export function mappoolSetup() {
         }
     
         mappoolName.innerHTML = escapeHtml(data.name);
-        mappoolDescription.innerHTML = "<span class='description'>Description: </span>"+escapeHtml(data.description);
+        if (data.description)
+            mappoolDescription.innerHTML = "<span class='description'>Description: </span>"+escapeHtml(data.description);
     
         const abcSortedBeatmaps = data.beatmap_connections.sort((a, b) => a.slot.charCodeAt(0) - b.slot.charCodeAt(0));
         const getSlotOrderIndex = (a) => {
