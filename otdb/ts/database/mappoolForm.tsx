@@ -199,6 +199,7 @@ export function mappoolFormSetup(editing: boolean) {
     } else {
         mappoolData = JSON.parse(getElementByIdOrThrow("mappool-data").innerText) as MappoolExtended;
         nameInput.setValue(mappoolData.name);
+        descriptionInput.setValue(mappoolData.description);
         for (const connection of mappoolData.beatmap_connections) {
             const beatmap = connection.beatmap;
 
