@@ -337,7 +337,7 @@ footer {
     max-width: 480px;
     padding: 5px;
 
-    position: absolute;
+    position: fixed;
     top: 100px;
     left: calc(50% - 250px);
 
