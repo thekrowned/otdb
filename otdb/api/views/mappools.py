@@ -2,7 +2,7 @@ from django.contrib.postgres.search import SearchVector, SearchQuery
 
 from ..serializers import *
 from .util import *
-from .listing import get_listing_from_params
+from .listing import Listing
 from common.validation import *
 
 import time
@@ -18,6 +18,32 @@ __all__ = (
 
 
 VALID_MODS = ("EZ", "HD", "HR", "DT", "FM", "RX", "HT", "NC", "FL", "AP", "SO")
+
+
+class MappoolListing(Listing[Mappool]):
+    MODEL = Mappool
+    SEARCH_FIELDS = (
+        "name",
+        "tournament_connections__name_override",
+        "tournament_connections__tournament__name",
+        "tournament_connections__tournament__abbreviation",
+        "tournament_connections__tournament__description"
+    )
+
+    MIN_SR = transform_query_param(float, None)
+    MAX_SR = transform_query_param(float, None)
+
+    def __init__(self, req):
+        super().__init__(req)
+
+        min_sr = self.cls.MIN_SR(req.GET.get("min-sr"))
+        max_sr = self.cls.MAX_SR(req.GET.get("max-sr"))
+
+        if min_sr is not None:
+            self.filters["avg_star_rating__gte"] = min_sr
+
+        if max_sr is not None:
+            self.filters["avg_star_rating__lte"] = max_sr
 
 
 async def get_full_mappool(user, mappool_id) -> dict | None:
@@ -60,17 +86,7 @@ async def mappools(req, mappool_id=None):
         return JsonResponse(mappool, safe=False) if mappool is not None else \
             error("invalid mappool id", 404)
 
-    mappool_list, total_pages = await get_listing_from_params(
-        Mappool,
-        (
-            "name",
-            "tournament_connections__name_override",
-            "tournament_connections__tournament__name",
-            "tournament_connections__tournament__abbreviation",
-            "tournament_connections__tournament__description"
-        ),
-        req
-    )
+    mappool_list, total_pages = await MappoolListing(req).aget()
 
     return JsonResponse(
         {

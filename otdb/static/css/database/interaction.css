@@ -61,3 +61,7 @@
     font-family: inherit;
     font-size: 20px;
 }
+
+.typeable.number {
+    width: 100px;
+}

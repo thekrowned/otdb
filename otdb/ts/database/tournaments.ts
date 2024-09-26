@@ -1,6 +1,9 @@
 import { getElementByIdOrThrow } from "../common/util";
 import {createListing, createListingItem} from "./listing";
 import {APIManager, TournamentWithFavorites} from "../common/api";
+import {ElementsManager} from "../common/elements";
+
+const manager = new ElementsManager();
 
 export function createTournamentItem(tournament: TournamentWithFavorites) {
     return createListingItem(
@@ -14,5 +17,12 @@ export function createTournamentItem(tournament: TournamentWithFavorites) {
 export function tournamentsSetup() {
     const tournamentContainer = getElementByIdOrThrow("tournaments-container");
 
-    createListing<TournamentWithFavorites>(tournamentContainer, APIManager.prototype.getTournaments, createTournamentItem);
+    const searchParams = new URLSearchParams();
+
+    createListing<TournamentWithFavorites>(
+        tournamentContainer,
+        (params) => manager.api.getTournamentsFromParams(params),
+        createTournamentItem,
+        searchParams
+    );
 }

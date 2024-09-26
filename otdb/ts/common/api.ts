@@ -231,10 +231,30 @@ export class APIManager {
      * @param page - page to index
      * @param sort - sort to index by
      * @param query - string query to search with
+     * @param minSR - minimum star rating
+     * @param maxSR - maximum star rating
      * @returns mappools and total pages if success, otherwise undefined
      */
-    public async getMappools(page: number, sort: ListingSortType, query: string): Promise<MappoolsResponse | undefined> {
-        return await this.req(`mappools/?s=${sort}&p=${page}&q=${query}`);
+    public async getMappools(
+        page: number,
+        sort: ListingSortType,
+        query: string,
+        minSR: number | null = null,
+        maxSR: number | null = null
+    ): Promise<MappoolsResponse | undefined> {
+        return await this.req(
+            `mappools/?s=${sort}&p=${page}&q=${query}&sr-min=${minSR ?? ""}&sr-max=${maxSR ?? ""}`
+        );
+    }
+
+    /**
+     * Get list of mappools from search parameters
+     *
+     * @param searchParams - URLSearchParams object
+     * @returns mappools and total pages if success, otherwise undefined
+     */
+    public async getMappoolsFromParams(searchParams: URLSearchParams): Promise<MappoolsResponse | undefined> {
+        return await this.req("mappools/?"+searchParams.toString());
     }
 
     /**
@@ -313,6 +333,16 @@ export class APIManager {
      */
     public async getTournaments(page: number, sort: ListingSortType, query: string): Promise<TournamentsResponse | undefined> {
         return await this.req(`tournaments/?p=${page}&s=${sort}&q=${query}`);
+    }
+
+    /**
+     * Get list of tournaments from search parameters
+     *
+     * @param searchParams - URLSearchParams object
+     * @returns list of tournaments and total pages if success, otherwise undefined
+     */
+    public async getTournamentsFromParams(searchParams: URLSearchParams): Promise<TournamentsResponse | undefined> {
+        return await this.req("tournaments/?"+searchParams.toString());
     }
 
     /**

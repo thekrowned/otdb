@@ -8,9 +8,13 @@
         <div id="recent-sort" class="clickable">Recently added</div>
         <div id="favorites-sort" class="clickable">Favorites</div>
         <div id="trending-sort" class="clickable">Trending</div>
-        <input id="search-input" class="typeable" type="text" placeholder="Search">
         <div style="flex-grow: 1;"></div>
         <a href="{% url 'new_mappool' %}"><div id="add-mappool" class="clickable">Add mappool</div></a>
+    </div>
+    <div class="interaction-container">
+        <input id="search-input" class="typeable" type="text" placeholder="Search">
+        <input id="min-sr-input" class="typeable number" type="number" placeholder="Min SR">
+        <input id="max-sr-input" class="typeable number" type="number" placeholder="Max SR">
     </div>
     <h1 id="loading-text">Loading...</h1>
     <div id="mappools-container" class="listing-container"></div>

@@ -3,7 +3,7 @@ from django.http import Http404
 from ..serializers import *
 from .util import *
 from common.validation import *
-from .listing import get_listing_from_params
+from .listing import Listing
 
 import time
 
@@ -14,6 +14,11 @@ __all__ = (
     "tournaments",
     "favorite_tournament",
 )
+
+
+class TournamentListing(Listing[Tournament]):
+    MODEL = Tournament
+    SEARCH_FIELDS = ("name", "abbreviation", "description")
 
 
 async def get_full_tournament(user, id):
@@ -57,11 +62,7 @@ async def tournaments(req, id=None):
         return JsonResponse(tournament, safe=False) if tournament is not None else \
             error("invalid tournament id", 404)
 
-    tournament_list, total_pages = await get_listing_from_params(
-        Tournament,
-        ("name", "abbreviation", "description"),
-        req
-    )
+    tournament_list, total_pages = await TournamentListing(req).aget()
 
     return JsonResponse({
         "data": TournamentSerializer(
