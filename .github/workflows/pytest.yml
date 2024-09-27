@@ -24,16 +24,6 @@ jobs:
 
     runs-on: ubuntu-24.04
 
-    services:
-      db:
-        image: postgres
-        env:
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.12
@@ -45,6 +35,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+    - name: Start postgresql
+      run: |
+        sudo systemctl start postgresql.service
     - name: Test with pytest
       working-directory: ./otdb
       run: |
