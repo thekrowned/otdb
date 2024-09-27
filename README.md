@@ -20,6 +20,7 @@ Steps to setup:
 - clone repository with `git clone https://github.com/Sheppsu/otdb.git`
 - install python requirements with `pip install -r requirements.txt`
 - create a postgresql database; you can find instructions online
+- run the sql files in /sql
 - make a copy of otdb/template.env named ".env" and fill in the values
 - run `npm install` in /otdb/ts
 - run `py manage.py migrate` in /otdb/ts

@@ -75,8 +75,9 @@ def bundle(outfile):
 
 def build():
     now = monotonic()
-    
-    shutil.rmtree(JS_DIR)
+
+    if os.path.isdir(JS_DIR):
+        shutil.rmtree(JS_DIR)
     os.mkdir(JS_DIR)
 
     if os.system("npm run build") == 0:
