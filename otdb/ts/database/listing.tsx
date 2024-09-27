@@ -1,6 +1,5 @@
 import jsx from "../jsxFactory";
 import {escapeHtml, getElementByIdOrThrow, removeChildren} from "../common/util";
-import {ListingSortType} from "../common/api";
 import {createPageNavigator, onPageClick} from "../common/navigation";
 import {setDelayedTypeable} from "../common/interactions";
 import {ElementsManager} from "../common/elements";
@@ -15,7 +14,7 @@ export function createListingItem(id: number, title: string, favoriteCount: numb
             </a>
             <hr></hr>
             <div class="listing-item-info">
-                <img class="favorites-cnt-star" src="/static/assets/svg/favorites.svg"></img>
+                <img class="favorites-cnt-star" src="/static/assets/svg/favorites.svg" alt="favorites icon"></img>
                 <p class="listing-item-info-data">{favoriteCount.toString()}</p>
                 <div style="flex-grow: 1;"></div>
                 {extra  === null ? "" : <p class="listing-item-info-data right">{extra}</p>}
@@ -26,14 +25,19 @@ export function createListingItem(id: number, title: string, favoriteCount: numb
 
 export function createListing<T>(
     listingContainer: HTMLElement,
-    getData: (page: number, sort: ListingSortType, query: string) => Promise<{data: T[], total_pages: number}>,
-    createListingItem: (item: T) => Element
-) {
+    getData: (searchParams: URLSearchParams) => Promise<{data: T[], total_pages: number}>,
+    createListingItem: (item: T) => Element,
+    searchParams: URLSearchParams
+): () => void {
     const params = new URLSearchParams(window.location.search);
     let sort: string = params.get("s") ?? "recent";
     let page: number = parseInt(params.get("p") ?? "1");
     let query: string = params.get("q") ?? "";
     let currentSortElm = null;
+
+    searchParams.set("s", sort);
+    searchParams.set("p", page.toString());
+    searchParams.set("q", query);
 
     const loadingText = getElementByIdOrThrow("loading-text");
     const searchInput = getElementByIdOrThrow<HTMLInputElement>("search-input");
@@ -41,13 +45,17 @@ export function createListing<T>(
     searchInput.value = query;
 
     function loadPage() {
-        window.history.replaceState({ s: sort, p: page }, document.title, `?s=${sort}&p=${page}&q=${query}`);
+        window.history.replaceState(
+            Object.fromEntries(searchParams.entries()),
+            document.title,
+            "?"+searchParams.toString()
+        );
 
         removeChildren(listingContainer);
 
         loadingText.classList.remove("hidden");
 
-        getData.bind(manager.api)(page, sort as ListingSortType, query).then((resp: {data: T[], total_pages: number}) => {
+        getData(searchParams).then((resp: {data: T[], total_pages: number}) => {
             loadingText.classList.add("hidden");
 
             if (resp === undefined) {
@@ -62,6 +70,7 @@ export function createListing<T>(
 
     function reloadPage(evt: MouseEvent) {
         page = onPageClick(evt, page);
+        searchParams.set("p", page.toString());
         loadPage();
     }
 
@@ -90,6 +99,7 @@ export function createListing<T>(
         }
         option.addEventListener("click", () => {
             sort = option.id.split("-")[0];
+            searchParams.set("s", sort);
             switchSort(option);
         });
     }
@@ -100,6 +110,10 @@ export function createListing<T>(
 
         query = searchInput.value;
         page = 1;
+        searchParams.set("q", query);
+        searchParams.set("p", "1")
         loadPage();
     });
+
+    return loadPage;
 }

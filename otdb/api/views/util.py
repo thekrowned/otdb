@@ -55,17 +55,23 @@ def option_query_param(options, default):
     return check
 
 
-def int_query_param(rng, default):
+def transform_query_param(transform, default):
     def check(value):
-        if value is None:
-            return default
-        
         try:
-            value = int(value)
-            return value if value in rng else default
-        except ValueError:
+            return transform(value)
+        except (ValueError, TypeError):
             return default
         
+    return check
+
+
+def int_query_param(ranj, default):
+    transform = transform_query_param(int, default)
+
+    def check(value):
+        value = transform(value)
+        return value if value in ranj else default
+
     return check
 
 

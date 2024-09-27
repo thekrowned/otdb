@@ -30,11 +30,15 @@ export function setHoldClick(element: HTMLElement, callback: () => void) {
     element.addEventListener("mouseup", stopProgress);
 }
 
-export function setDelayedTypeable(input: HTMLInputElement, callback: () => void) {
+export function setDelayedTypeable(input: HTMLInputElement, callback: () => void, change: boolean = true) {
     let timeoutId: number | null = null;
 
     function activate() {
-        timeoutId = null;
+        if (timeoutId !== null) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+
         callback();
     }
 
@@ -44,5 +48,6 @@ export function setDelayedTypeable(input: HTMLInputElement, callback: () => void
 
         timeoutId = setTimeout(activate, 500);
     });
-    input.addEventListener("change", activate);
+    if (change)
+        input.addEventListener("change", activate);
 }

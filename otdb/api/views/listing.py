@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.postgres import search
 
 from asgiref.sync import sync_to_async
-from typing import TypeVar, Iterable
+from typing import Type, TypeVar
 import time
 
 from .util import option_query_param, int_query_param
@@ -12,57 +12,76 @@ _T = TypeVar('_T', bound=type[models.Model])
 LISTING_ITEMS_PER_PAGE = 15
 
 
-def get_listing(model: _T, search_fields: Iterable[str], page: int, query: str, sort: str, **annotations) -> \
-        tuple[list[_T], int]:
-    offset = LISTING_ITEMS_PER_PAGE * (page - 1)
-    limit = LISTING_ITEMS_PER_PAGE
+class ListingSort:
+    __slots__ = ("_column", "_desc", "extra")
 
-    query_set = model.objects.annotate(
-        favorite_count=models.Count("favorites"),
-        **annotations
-    )
-    count_query_set = model.objects
-    if query:
-        q = search.SearchVector(*search_fields)
-        query_set = query_set.annotate(search=q).filter(search=search.SearchQuery(query))
-        count_query_set = count_query_set.annotate(search=q).filter(search=search.SearchQuery(query))
+    def __init__(self, column: str, **extra):
+        self._column = column
+        self._desc = True
+        self.extra = extra
 
-    return (
-        list(query_set.order_by(sort)[offset:offset + limit]),
-        (count_query_set.count() - 1) // LISTING_ITEMS_PER_PAGE + 1
-    )
+    def __str__(self):
+        return ("-" if self._desc else "+") + self._column
 
 
-async def get_recent_listing(model: _T, search_fields: Iterable[str], page: int, query: str) -> tuple[list[_T], int]:
-    return await sync_to_async(get_listing)(model, search_fields, page, query, "-id")
+class Listing[_T]:
+    __slots__ = ("_model", "sort", "page", "query", "filters", "extra")
 
-
-async def get_favorites_listing(model: _T, search_fields: Iterable[str], page: int, query: str) -> tuple[list[_T], int]:
-    return await sync_to_async(get_listing)(model, search_fields, page, query, "-favorite_count")
-
-
-async def get_trending_listing(model: _T, search_fields: Iterable[str], page: int, query: str) -> tuple[list[_T], int]:
-    return await sync_to_async(get_listing)(
-        model,
-        search_fields,
-        page,
-        query,
-        "-recent_favorites",
-        recent_favorites=models.Count(
-            "favorite_connections",
-            filter=models.Q(favorite_connections__timestamp__gt=time.time() // 1 - 604800)
+    SORT_OPTIONS: dict[str, ListingSort] = {
+        "recent": ListingSort("id"),
+        "favorites": ListingSort("favorite_count"),
+        "trending": ListingSort(
+            "recent_favorites",
+            recent_favorites=models.Count(
+                "favorite_connections",
+                filter=models.Q(favorite_connections__timestamp__gt=time.time() // 1 - 604800)
+            )
         )
-    )
-
-
-async def get_listing_from_params(model: _T, search_fields: Iterable[str], req) -> tuple[list[_T], int]:
-    SORT_OPTIONS = {
-        "recent": get_recent_listing,
-        "favorites": get_favorites_listing,
-        "trending": get_trending_listing
     }
+    SEARCH_FIELDS: tuple[str] = ()
+    MODEL: Type[_T]
 
-    sort = option_query_param(tuple(SORT_OPTIONS.keys()), "recent")(req.GET.get("s", "recent").lower())
-    page = int_query_param(range(1, 9999999), 1)(req.GET.get("p", 1))
+    SORT = option_query_param(
+        tuple(SORT_OPTIONS.keys()),
+        "recent"
+    )
+    PAGE = int_query_param(range(1, 9999999), 1)
 
-    return await SORT_OPTIONS[sort](model, search_fields, page, req.GET.get("q", "").strip())
+    @property
+    def cls(self):
+        return self.__class__
+
+    def __init__(self, req):
+        self.sort: ListingSort = self.cls.SORT_OPTIONS[self.cls.SORT(req.GET.get("s", "recent").lower())]
+        self.page: int = self.cls.PAGE(req.GET.get("p", 1))
+        self.query: str = req.GET.get("q", "").strip()
+
+        self.extra = {}
+        self.filters = {}
+
+        if self.query:
+            self.extra["search"] = search.SearchVector(*self.cls.SEARCH_FIELDS)
+            self.filters["search"] = search.SearchQuery(self.query)
+
+    async def aget(self) -> tuple[list[_T], int]:
+        return await sync_to_async(self.get)()
+
+    def get(self) -> tuple[list[_T], int]:
+        offset = LISTING_ITEMS_PER_PAGE * (self.page - 1)
+        limit = LISTING_ITEMS_PER_PAGE
+
+        query = self.MODEL.objects.annotate(
+            favorite_count=models.Count("favorites"),
+            **self.extra,
+            **self.sort.extra
+        ).filter(
+            **self.filters
+        )
+
+        result = query.order_by(str(self.sort))[offset:offset + limit]
+        count = query.count()
+
+        return (
+            list(result),
+            (count - 1) // LISTING_ITEMS_PER_PAGE + 1
+        )
