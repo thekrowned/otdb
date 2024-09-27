@@ -15,10 +15,10 @@ jobs:
       OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
       OSU_CLIENT_REDIRECT_URI: ${{ secrets.OSU_CLIENT_REDIRECT_URI }}
 
-      PGDATABASE: postgres
+      PGDATABASE: otdb
       PGUSER: postgres
       PGPASSWORD: postgres
-      PGHOST: 127.0.0.1
+      PGHOST: localhost
       PGPORT: 5432
 
     runs-on: ubuntu-24.04
@@ -36,6 +36,15 @@ jobs:
     - name: Start postgresql
       run: |
         sudo systemctl start postgresql.service
+    - name: Setup PSQL database
+      shell: bash
+      run: |
+        echo "postgres" > temp.pwfile
+        initdb --username="postgres" --pwfile="temp.pwfile"
+        
+        pg_ctl start
+        
+        createdb --owner="postgres" --username="postgres" "otdb"
     - name: Test with pytest
       working-directory: ./otdb
       run: |
