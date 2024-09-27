@@ -5,13 +5,20 @@ from django.conf import settings
 
 from . import views
 
-from asgiref.sync import sync_to_async
 import json
 import pytest
+import os
 
 
 OsuUser = get_user_model()
-SQL_DIR = settings.BASE_DIR / "sql"
+SQL_DIR = os.path.join(os.path.split(settings.BASE_DIR)[0], "sql")
+
+
+def auser(user):
+    async def get():
+        return user
+
+    return get
 
 
 class Client:
@@ -20,15 +27,15 @@ class Client:
         self.user = OsuUser.objects.get(id=14895608)
         self.mappool = None
 
-    def get(self, *args, **kwargs):
-        req = self.factory.get(*args, **kwargs)
-        req.user = self.user
+    def _fill_req(self, req):
+        req.auser = auser(self.user)
         return req
 
+    def get(self, *args, **kwargs):
+        return self._fill_req(self.factory.get(*args, **kwargs))
+
     def post(self, *args, content_type="application/json", **kwargs):
-        req = self.factory.post(*args, content_type=content_type, **kwargs)
-        req.user = self.user
-        return req
+        return self._fill_req(self.factory.post(*args, content_type=content_type, **kwargs))
 
 
 @pytest.fixture(scope="session")
@@ -41,22 +48,35 @@ def django_db_createdb():
     yield True
 
 
+def create_user():
+    user = OsuUser(
+        id=14895608,
+        username="Sheppsu",
+        avatar="",
+        cover=""
+    )
+    user.save()
+
+
+def create_psql_functions():
+    with connection.cursor() as cursor:
+        for file in os.listdir(SQL_DIR):
+            with open(os.path.join(SQL_DIR, file), "r") as f:
+                cursor.execute(f.read())
+
+
 @pytest.fixture(scope="session")
 def django_db_setup(django_db_setup, django_db_blocker):
     with django_db_blocker.unblock():
-        user = OsuUser(
-            id=14895608,
-            username="Sheppsu",
-            avatar="",
-            cover=""
-        )
-        user.save()
+        create_user()
+        create_psql_functions()
 
 
 @pytest.fixture
-def mappool_request():
+def sample_mappool():
     yield {
         "name": "test mappool",
+        "description": "this is a description",
         "beatmaps": [
             {
                 "id": 3993830,
@@ -118,76 +138,75 @@ def client(django_db_blocker):
         yield Client()
 
 
+def parse_resp(resp):
+    assert resp.status_code == 200, resp.content.decode("utf-8")
+    return json.loads(resp.content) if resp.content else None
+
+
 @pytest.mark.django_db
 class TestTournaments:
-    def test_list(self, client):
+    @pytest.mark.asyncio
+    async def test_tournaments_list(self, client):
         req = client.get("/api/tournaments/")
-        resp = views.tournaments(req)
-        assert resp.status_code == 200
-        assert isinstance(json.loads(resp.content), list)
+        parse_resp(await views.tournaments(req))
 
 
 @pytest.mark.django_db
 class TestMappools:
     @pytest.mark.asyncio
-    async def test_create_mappool(self, client, mappool_request):
-        def create_new_mappool_function():
-            with open(SQL_DIR / "new_mappool.sql", "r") as f:
-                with connection.cursor() as cursor:
-                    cursor.execute(f.read())
+    async def test_create_mappool(self, client, sample_mappool):
+        req = client.post("/api/mappools/", data=json.dumps(sample_mappool))
+        mappool = parse_resp(await views.mappools(req))
 
-        await sync_to_async(create_new_mappool_function)()
-
-        req = client.post("/api/mappools/", data=json.dumps(mappool_request))
-        resp = await views.mappools(req)
-
-        assert resp.status_code == 200, resp.content.decode("utf-8")
-        mappool = json.loads(resp.content)
         assert isinstance(mappool, dict)
         assert isinstance(mappool["id"], int)
-        assert mappool["name"] == mappool_request["name"]
+
+        assert mappool["name"] == sample_mappool["name"]
+        assert mappool["description"] == sample_mappool["description"]
 
         client.mappool = mappool
 
     @pytest.mark.asyncio
-    async def test_get_mappool(self, client, mappool_request):
+    async def test_get_mappool(self, client, sample_mappool):
         mappool = client.mappool
         assert mappool is not None, "test_create_mappool failed; no mappool"
 
         req = client.get(f"/api/mappools/{mappool['id']}/")
-        resp = await views.mappools(req, mappool['id'])
+        data = parse_resp(await views.mappools(req, mappool['id']))
 
-        assert resp.status_code == 200
-        data = json.loads(resp.content)
         assert data["id"] == mappool["id"]
         assert data["name"] == mappool["name"]
-        for test_beatmap in mappool_request["beatmaps"]:
-            beatmap = next(filter(lambda b: b["beatmap_metadata"]["id"] == test_beatmap["id"], data["beatmaps"]))
-            assert test_beatmap["slot"] == beatmap["slot"]
-            mods = [mod["acronym"] for mod in beatmap["mods"]]
-            for mod in test_beatmap["mods"]:
+        assert data["description"] == mappool["description"]
+        for sample_beatmap in sample_mappool["beatmaps"]:
+            beatmap_conn = next(filter(
+                lambda c: c["beatmap"]["beatmap_metadata"]["id"] == sample_beatmap["id"],
+                data["beatmap_connections"]
+            ))
+
+            assert sample_beatmap["slot"] == beatmap_conn["slot"]
+
+            mods = [mod["acronym"] for mod in beatmap_conn["beatmap"]["mods"]]
+            for mod in sample_beatmap["mods"]:
                 assert mod in mods
 
-    def test_favorite_mappool(self, client):
+    @pytest.mark.asyncio
+    async def test_favorite_mappool(self, client):
         mappool = client.mappool
         assert mappool is not None, "test_create_mappool failed; no mappool"
 
         req = client.post(f"/api/mappools/{mappool['id']}/favorite/", data=json.dumps({"favorite": True}))
-        resp = views.favorite_mappool(req, mappool["id"])
-
-        assert resp.status_code == 200
+        parse_resp(await views.favorite_mappool(req, mappool["id"]))
 
     async def _test_mappool_list(self, client, sort):
         mappool = client.mappool
         assert mappool is not None, "test_create_mappool failed; no mappool"
 
         req = client.get(f"/api/mappools/?s={sort}")
-        resp = await views.mappools(req)
+        data = parse_resp(await views.mappools(req))
 
-        assert resp.status_code == 200
-        data = json.loads(resp.content)
         assert isinstance(data, dict)
         assert data["total_pages"] == 1
+
         mappools = data["data"]
         assert isinstance(mappools, list)
         assert len(mappools) == 1

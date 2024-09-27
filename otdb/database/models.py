@@ -206,7 +206,7 @@ class Mappool(models.Model):
                 *map(",".join, unzip(data)),
                 id
             ))
-            return cls(id=cursor.fetchone()[0], name=name, submitted_by=submitted_by)
+            return cls(id=cursor.fetchone()[0], name=name, description=description, submitted_by=submitted_by)
 
     @classmethod
     async def new(
