@@ -16,8 +16,8 @@ jobs:
       OSU_CLIENT_REDIRECT_URI: ${{ secrets.OSU_CLIENT_REDIRECT_URI }}
 
       PGDATABASE: otdb
-      PGUSER: postgres
-      PGPASSWORD: postgres
+      PGUSER: otdb
+      PGPASSWORD: otdb
       PGHOST: localhost
       PGPORT: 5432
 
@@ -34,17 +34,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Start postgresql
-      run: |
-        sudo systemctl start postgresql.service
-    - name: Setup PSQL database
       shell: bash
       run: |
-        echo "postgres" > temp.pwfile
-        initdb --username="postgres" --pwfile="temp.pwfile"
-        
-        pg_ctl start
-        
-        createdb --owner="postgres" --username="postgres" "otdb"
+        sudo systemctl start postgresql.service
+        sudo -u postgres psql --command="CREATE USER otdb PASSWORD 'otdb'" --command="\du"
+        sudo -u postgres createdb --owner=otdb otdb
     - name: Test with pytest
       working-directory: ./otdb
       run: |
