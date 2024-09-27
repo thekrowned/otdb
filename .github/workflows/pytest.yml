@@ -9,10 +9,34 @@ on:
 permissions:
   contents: read
 
+env:
+  DEBUG: 0
+  DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+
+  OSU_CLIENT_ID: ${{ secrets.OSU_CLIENT_ID }}
+  OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
+  OSU_CLIENT_REDIRECT_URI: ${{ secrets.OSU_CLIENT_REDIRECT_URI }}
+
+  PGDATABASE: postgres
+  PGUSER: postgres
+  PGPASSWORD: postgres
+  PGHOST: 127.0.0.1
+  PGPORT: 5432
+
 jobs:
   build:
 
     runs-on: ubuntu-24.04
+
+    services:
+      db:
+        image: postgres
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
 
     steps:
     - uses: actions/checkout@v4
