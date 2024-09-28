@@ -118,8 +118,6 @@ h1 {
 .login-container {
     width: 100px;
     height: 35px;
-    margin-top: 3px;
-    margin-right: 10px;
 
     border: 3px solid var(--bg-color2);
     border-radius: 3px;
