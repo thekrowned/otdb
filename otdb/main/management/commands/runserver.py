@@ -15,7 +15,8 @@ class Command(BaseCommand):
                 "common",
                 "database",
                 "main",
-                "otdb"
+                "otdb",
+                "admin"
             ],
             log_level="debug"
         )
