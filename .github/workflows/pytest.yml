@@ -10,6 +10,7 @@ jobs:
     env:
       DEBUG: 0
       DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      IS_GITHUB_WORKFLOW: 1
 
       OSU_CLIENT_ID: ${{ secrets.OSU_CLIENT_ID }}
       OSU_CLIENT_SECRET: ${{ secrets.OSU_CLIENT_SECRET }}
@@ -37,7 +38,7 @@ jobs:
       shell: bash
       run: |
         sudo systemctl start postgresql.service
-        sudo -u postgres psql --command="CREATE USER otdb PASSWORD 'otdb'" --command="\du"
+        sudo -u postgres psql --command="CREATE USER otdb WITH SUPERUSER CREATEDB PASSWORD 'otdb'" --command="\du"
         sudo -u postgres createdb --owner=otdb otdb
     - name: Django migrations
       working-directory: ./otdb
