@@ -8,6 +8,7 @@ from . import views
 import json
 import pytest
 import os
+from asgiref.sync import sync_to_async
 
 
 OsuUser = get_user_model()
@@ -22,20 +23,31 @@ def auser(user):
 
 
 class Client:
+    __slots__ = ("factory", "_user", "mappool")
+
     def __init__(self):
         self.factory = RequestFactory()
-        self.user = OsuUser.objects.get(id=14895608)
+        self._user = None
         self.mappool = None
 
-    def _fill_req(self, req):
-        req.auser = auser(self.user)
+    def _get_user(self):
+        return OsuUser.objects.get(id=8640970)
+
+    async def get_user(self):
+        if self._user is None:
+            self._user = await sync_to_async(self._get_user)()
+
+        return self._user
+
+    async def _fill_req(self, req):
+        req.auser = auser(await self.get_user())
         return req
 
-    def get(self, *args, **kwargs):
-        return self._fill_req(self.factory.get(*args, **kwargs))
+    async def get(self, *args, **kwargs):
+        return await self._fill_req(self.factory.get(*args, **kwargs))
 
-    def post(self, *args, content_type="application/json", **kwargs):
-        return self._fill_req(self.factory.post(*args, content_type=content_type, **kwargs))
+    async def post(self, *args, content_type="application/json", **kwargs):
+        return await self._fill_req(self.factory.post(*args, content_type=content_type, **kwargs))
 
 
 @pytest.fixture(scope="session")
@@ -50,8 +62,8 @@ def django_db_createdb():
 
 def create_user():
     user = OsuUser(
-        id=14895608,
-        username="Sheppsu",
+        id=8640970,
+        username="enri",
         avatar="",
         cover=""
     )
@@ -133,9 +145,8 @@ def sample_mappool():
 
 
 @pytest.fixture(scope="session")
-def client(django_db_blocker):
-    with django_db_blocker.unblock():
-        yield Client()
+def client():
+    yield Client()
 
 
 def parse_resp(resp):
@@ -147,7 +158,7 @@ def parse_resp(resp):
 class TestTournaments:
     @pytest.mark.asyncio
     async def test_tournaments_list(self, client):
-        req = client.get("/api/tournaments/")
+        req = await client.get("/api/tournaments/")
         parse_resp(await views.tournaments(req))
 
 
@@ -155,7 +166,7 @@ class TestTournaments:
 class TestMappools:
     @pytest.mark.asyncio
     async def test_create_mappool(self, client, sample_mappool):
-        req = client.post("/api/mappools/", data=json.dumps(sample_mappool))
+        req = await client.post("/api/mappools/", data=json.dumps(sample_mappool))
         mappool = parse_resp(await views.mappools(req))
 
         assert isinstance(mappool, dict)
@@ -171,7 +182,7 @@ class TestMappools:
         mappool = client.mappool
         assert mappool is not None, "test_create_mappool failed; no mappool"
 
-        req = client.get(f"/api/mappools/{mappool['id']}/")
+        req = await client.get(f"/api/mappools/{mappool['id']}/")
         data = parse_resp(await views.mappools(req, mappool['id']))
 
         assert data["id"] == mappool["id"]
@@ -194,14 +205,14 @@ class TestMappools:
         mappool = client.mappool
         assert mappool is not None, "test_create_mappool failed; no mappool"
 
-        req = client.post(f"/api/mappools/{mappool['id']}/favorite/", data=json.dumps({"favorite": True}))
+        req = await client.post(f"/api/mappools/{mappool['id']}/favorite/", data=json.dumps({"favorite": True}))
         parse_resp(await views.favorite_mappool(req, mappool["id"]))
 
     async def _test_mappool_list(self, client, sort):
         mappool = client.mappool
         assert mappool is not None, "test_create_mappool failed; no mappool"
 
-        req = client.get(f"/api/mappools/?s={sort}")
+        req = await client.get(f"/api/mappools/?s={sort}")
         data = parse_resp(await views.mappools(req))
 
         assert isinstance(data, dict)
