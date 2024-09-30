@@ -33,6 +33,8 @@ DEBUG = bool(int(os.getenv("DEBUG")))
 
 ALLOWED_HOSTS = ["*"] if DEBUG else ["otdb.sheppsu.me"]
 
+IS_GITHUB_WORKFLOW = os.getenv("IS_GITHUB_WORKFLOW") is not None
+
 
 # Application definition
 

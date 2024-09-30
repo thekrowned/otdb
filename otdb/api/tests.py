@@ -52,12 +52,12 @@ class Client:
 
 @pytest.fixture(scope="session")
 def django_db_keepdb():
-    yield False
+    yield settings.IS_GITHUB_WORKFLOW
 
 
 @pytest.fixture(scope="session")
 def django_db_createdb():
-    yield True
+    yield not settings.IS_GITHUB_WORKFLOW
 
 
 def create_user():
