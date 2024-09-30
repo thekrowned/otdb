@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Admin{% endblock title %}
+{% block body %}
+<div class="page-container">
+    <h1>Traffic statistics</h1>
+    {% for stat in statistics %}
+        <p><span style="color: white;">{{ stat.timestamp }}</span> {{ stat.traffic }}</p>
+    {% endfor %}
+</div>
+{% endblock body %}

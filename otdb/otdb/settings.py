@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "main.apps.MainConfig",
     "database.apps.DatabaseConfig",
     "api.apps.ApiConfig",
+    "admin.apps.AdminConfig",
 
     "debug_toolbar",
 
