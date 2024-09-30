@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 
 from osu import AsynchronousClient, AsynchronousAuthHandler, Scope
+from datetime import datetime, timezone, time
+from asgiref.sync import sync_to_async
 
 
 osu_client: AsynchronousClient = settings.OSU_CLIENT
@@ -62,3 +64,19 @@ class OsuUser(models.Model):
 
     def __str__(self):
         return self.username
+
+
+class TrafficStatistic(models.Model):
+    timestamp = models.DateTimeField()
+    traffic = models.PositiveBigIntegerField(default=0)
+
+    @classmethod
+    def _now(cls):
+        now = datetime.now(tz=timezone.utc)
+        now_hour = datetime.combine(now, time(hour=now.hour), tzinfo=timezone.utc)
+
+        return cls.objects.get_or_create(timestamp=now_hour)[0]
+
+    @classmethod
+    async def now(cls):
+        return await sync_to_async(cls._now)()

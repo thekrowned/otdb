@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     "api.apps.ApiConfig",
 
     "debug_toolbar",
-    "whitenoise.runserver_nostatic",
 
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -53,7 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "servestatic.middleware.ServeStaticMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -61,7 +60,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
-    "common.middleware.ExceptionHandlingMiddleware"
+    "common.middleware.ExceptionHandlingMiddleware",
+    "common.middleware.TrafficStatisticsMiddleware"
 ]
 
 ROOT_URLCONF = "otdb.urls"
@@ -82,7 +82,17 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "otdb.wsgi.application"
+ASGI_APPLICATION = "otdb.asgi.application"
+
+
+from django.utils.log import DEFAULT_LOGGING
+
+
+LOGGING = DEFAULT_LOGGING
+LOGGING["loggers"]["django.request"] = {
+    "handlers": ["console"],
+    "level": "DEBUG"
+}
 
 
 # Database
@@ -102,7 +112,7 @@ DATABASES = {
 
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        "BACKEND": "servestatic.storage.CompressedManifestStaticFilesStorage"
     }
 }
 
