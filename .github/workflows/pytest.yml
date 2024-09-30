@@ -38,7 +38,7 @@ jobs:
       shell: bash
       run: |
         sudo systemctl start postgresql.service
-        sudo -u postgres createuser -s -d -P otdb otdb
+        sudo -u postgres psql --command="CREATE USER otdb WITH SUPERUSER CREATEDB PASSWORD 'otdb'" --command="\du"
         sudo -u postgres createdb --owner=otdb otdb
     - name: Django migrations
       working-directory: ./otdb
