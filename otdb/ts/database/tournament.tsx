@@ -32,8 +32,8 @@ export function tournamentSetup() {
 
     const tournamentId = parseInt(window.location.toString().split("/")[5]);
 
-    var favoriteDebounce = false;
-    var deleteDebounce = false;
+    let favoriteDebounce = false;
+    let deleteDebounce = false;
 
     function favoriteTournament() {
         if (favoriteDebounce) return;
