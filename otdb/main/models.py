@@ -5,6 +5,8 @@ from osu import AsynchronousClient, AsynchronousAuthHandler, Scope
 from datetime import datetime, timezone, time
 from asgiref.sync import sync_to_async
 
+from common.models import SerializableModel
+
 
 osu_client: AsynchronousClient = settings.OSU_CLIENT
 
@@ -29,7 +31,7 @@ class UserManager(models.Manager):
         return user
 
 
-class OsuUser(models.Model):
+class OsuUser(SerializableModel):
     is_anonymous = False
     is_authenticated = True
 
@@ -45,6 +47,14 @@ class OsuUser(models.Model):
     # the username could not be unique
     USERNAME_FIELD = "id"
     objects = UserManager()
+
+    class Serialization:
+        FIELDS = ["id", "username", "avatar", "cover", "is_admin"]
+        TRANSFORM = {
+            "involvements": "staff_roles",
+            "mappool_favorite_connections": "mappool_favorites",
+            "tournament_favorite_connections": "tournament_favorites"
+        }
 
     @classmethod
     async def from_data(cls, data):
@@ -66,9 +76,12 @@ class OsuUser(models.Model):
         return self.username
 
 
-class TrafficStatistic(models.Model):
+class TrafficStatistic(SerializableModel):
     timestamp = models.DateTimeField()
     traffic = models.PositiveBigIntegerField(default=0)
+
+    class Serialization:
+        FIELDS = ["timestamp", "traffic"]
 
     @classmethod
     def _now(cls):

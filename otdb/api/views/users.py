@@ -1,5 +1,6 @@
-from ..serializers import *
 from .util import *
+from main.models import *
+from database.models import *
 
 
 __all__ = (
@@ -34,8 +35,8 @@ async def users(req, id):
     except OsuUser.DoesNotExist:
         return error("Invalid user id", 400)
 
-    return JsonResponse(OsuUserSerializer(user).serialize(
-        include=[
+    return JsonResponse(user.serialize(
+        includes=[
             "involvements__tournament__favorite_count",
             "tournament_favorite_connections__tournament__favorite_count",
             "mappool_favorite_connections__mappool__favorite_count",

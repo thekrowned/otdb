@@ -1,9 +1,9 @@
 from django.http import Http404
 
-from ..serializers import *
 from .util import *
 from common.validation import *
 from .listing import Listing
+from database.models import *
 
 import time
 
@@ -36,9 +36,9 @@ async def get_full_tournament(user, id):
     except Tournament.DoesNotExist:
         return
     
-    data = TournamentSerializer(tournament).serialize(
-        include=["involvements__user", "submitted_by", "mappool_connections__mappool__favorite_count"],
-        exclude=["mappool_connections__tournament_id"]
+    data = tournament.serialize(
+        includes=["involvements__user", "submitted_by", "mappool_connections__mappool__favorite_count"],
+        excludes=["mappool_connections__tournament_id"]
     )
     
     if user.is_authenticated:
@@ -65,10 +65,9 @@ async def tournaments(req, id=None):
     tournament_list, total_pages = await TournamentListing(req).aget()
 
     return JsonResponse({
-        "data": TournamentSerializer(
-            tournament_list,
-            many=True
-        ).serialize(include=["favorite_count"]),
+        "data": list((
+            tournament.serialize(includes=["favorite_count"]) for tournament in tournament_list
+        )),
         "total_pages": total_pages
     }, safe=False)
 
@@ -120,7 +119,7 @@ async def create_tournament(req, data):
         data.get("id") or 0
     )
 
-    return JsonResponse(TournamentSerializer(tournament).serialize(), safe=False)
+    return JsonResponse(tournament.serialize(), safe=False)
 
 
 @requires_auth
