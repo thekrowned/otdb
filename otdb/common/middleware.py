@@ -5,6 +5,7 @@ from main.models import TrafficStatistic
 
 import logging
 import asyncio
+from asgiref.sync import markcoroutinefunction
 
 log = logging.getLogger(__name__)
 
@@ -23,14 +24,15 @@ class Middleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        markcoroutinefunction(self)
 
     async def __call__(self, *args, **kwargs):
         return await self.get_response(*args, **kwargs)
 
 
 class ExceptionHandlingMiddleware(Middleware):
-
-    async def process_exception(self, req, exc):
+    # process_exception is always adapted to be synchronous by django anyways
+    def process_exception(self, req, exc):
         if isinstance(exc, ExpectedException):
             return JsonResponse({"error": exc.args[0]}, safe=False, status=exc.args[1])
 
@@ -51,3 +53,10 @@ class TrafficStatisticsMiddleware(Middleware):
                 log.exception(exc)
 
         asyncio.create_task(increment()).add_done_callback(callback)
+
+
+def get_response_wrapper(response):
+    def get_response():
+        return response
+
+    return get_response
