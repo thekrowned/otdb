@@ -1,59 +1,70 @@
+.tournament-name-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 #tournament-name {
-    text-align: center;
-    color: white;
+  text-align: center;
+  color: white;
+}
+
+.tournament-external-link {
+  width: 30px;
+  height: 30px;
 }
 
 #tournament-container {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .tournament-item {
-    text-wrap: wrap;
-    word-wrap: break-word;
+  text-wrap: wrap;
+  word-wrap: break-word;
 }
 
 .tournament-item-label {
-    color: white;
+  color: white;
 }
 
 .tournament-section-label {
-    margin: 10px 0;
+  margin: 10px 0;
 
-    color: white;
+  color: white;
 }
 
 .tournament-section-label.sub {
-    font-size: 30px;
+  font-size: 30px;
 }
 
 .tournament-staff-container {
-    width: 100%;
+  width: 100%;
 
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
 
-    gap: 5px;
+  gap: 5px;
 }
 
 .tournament-staff {
-    height: 30px;
-    padding: 5px;
+  height: 30px;
+  padding: 5px;
 
-    border-radius: 5px;
+  border-radius: 5px;
 
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
 
-    background-color: var(--fg-color1);
+  background-color: var(--fg-color1);
 }
 
 .tournament-staff-avatar {
-    width: 30px;
-    height: 30px;
+  width: 30px;
+  height: 30px;
 
-    border-radius: 30px;
+  border-radius: 30px;
 }

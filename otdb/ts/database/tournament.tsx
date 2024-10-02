@@ -132,11 +132,25 @@ export function tournamentSetup() {
             }
         }
 
-        document.title += `: ${data.abbreviation}`;
-        tournamentName.innerHTML = data.name;
+        const tournamentNameElement = (
+            <div class="tournament-name-container">
+                <h1 id="tournament-name">{data.name}</h1>
+                {data.link.length > 0 ? (
+                    <a href={data.link} target="_blank" class="tournament-external-link">
+                        <img
+                            src="/static/assets/svg/external-link.svg"
+                            class="tournament-external-link"
+                        />
+                    </a>
+                ) : (
+                    <span></span>
+                )}
+            </div>
+        );
 
-        if (data.link.length > 0)
-            container.append(createTournamentItem("Link", data.link, true));
+        document.title += `: ${data.abbreviation}`;
+        tournamentName.innerHTML = "";
+        container.append(tournamentNameElement);
 
         if (data.description.length > 0)
             container.append(createTournamentItem("Description", data.description));
