@@ -1,8 +1,8 @@
 from django.contrib.postgres.search import SearchVector, SearchQuery
 
-from ..serializers import *
 from .util import *
 from .listing import Listing
+from database.models import *
 from common.validation import *
 
 import time
@@ -12,8 +12,7 @@ __all__ = (
     "get_full_mappool",
     
     "mappools",
-    "favorite_mappool",
-    "search_mappools"
+    "favorite_mappool"
 )
 
 
@@ -65,7 +64,7 @@ async def get_full_mappool(user, mappool_id) -> dict | None:
     except Mappool.DoesNotExist:
         return
 
-    data = MappoolSerializer(mappool).serialize(include=include+prefetch)
+    data = mappool.serialize(includes=include+prefetch)
 
     if user.is_authenticated:
         data["is_favorited"] = await mappool.is_favorited(user.id)
@@ -90,10 +89,9 @@ async def mappools(req, mappool_id=None):
 
     return JsonResponse(
         {
-            "data": MappoolSerializer(
-                mappool_list,
-                many=True
-            ).serialize(include=["favorite_count"]),
+            "data": list((
+                mappool.serialize(includes=["favorite_count"]) for mappool in mappool_list
+            )),
             "total_pages": total_pages
         },
         safe=False
@@ -153,8 +151,7 @@ async def create_mappool(req, data):
         mappool_id=data.get("id") or 0
     )
 
-    serializer = MappoolSerializer(mappool)
-    return JsonResponse(serializer.serialize(), safe=False)
+    return JsonResponse(mappool.serialize(), safe=False)
 
 
 @requires_auth
@@ -198,20 +195,3 @@ async def favorite_mappool(req, mappool_id, data):
         await favorite.adelete()
 
     return HttpResponse(b"", 200)
-
-
-@require_method("GET")
-async def search_mappools(req):
-    def search(req):
-        return list(Mappool.objects.annotate(
-            search=SearchVector(
-                "name",
-                "tournament_connections__name_override",
-                "tournament_connections__tournament__name",
-                "tournament_connections__tournament__abbreviation",
-                "tournament_connections__tournament__description"
-            )
-        ).filter(search=SearchQuery(req.GET.get("q", "")))[:20])
-
-    result = await sync_to_async(search)(req)
-    return JsonResponse(MappoolSerializer(result, many=True).serialize(), safe=False)

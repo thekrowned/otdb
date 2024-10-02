@@ -2,7 +2,7 @@ from django.db import models, connection
 from django.contrib.auth import get_user_model
 from django.conf import settings
 
-from common.models import enum_field
+from common.models import enum_field, SerializableModel
 from common.exceptions import ClientException, ServerException
 from common.util import sql_s, unzip, find_invalids
 
@@ -94,17 +94,20 @@ class UserRolesField:
     pass
 
 
-class BeatmapsetMetadata(models.Model):
+class BeatmapsetMetadata(SerializableModel):
     id = models.PositiveIntegerField(primary_key=True)
     artist = models.CharField(max_length=256)
     title = models.CharField(max_length=256)
     creator = models.CharField(max_length=15)
 
+    class Serialization:
+        FIELDS = ["id", "artist", "title", "creator"]
+
     def __str__(self):
         return str(self.id)
 
 
-class BeatmapMetadata(models.Model):
+class BeatmapMetadata(SerializableModel):
     id = models.PositiveIntegerField(primary_key=True)
     difficulty = models.CharField(max_length=256)
     ar = models.FloatField()
@@ -114,13 +117,19 @@ class BeatmapMetadata(models.Model):
     length = models.PositiveIntegerField()
     bpm = models.FloatField()
 
+    class Serialization:
+        FIELDS = ["id", "difficulty", "ar", "od", "cs", "hp", "length", "bpm"]
+
     def __str__(self):
         return str(self.id)
 
 
-class BeatmapMod(models.Model):
+class BeatmapMod(SerializableModel):
     acronym = models.CharField(max_length=2)
     settings = models.JSONField(default=dict)
+
+    class Serialization:
+        FIELDS = ["id", "acronym", "settings"]
 
     class Meta:
         constraints = [
@@ -128,11 +137,14 @@ class BeatmapMod(models.Model):
         ]
 
 
-class MappoolBeatmap(models.Model):
+class MappoolBeatmap(SerializableModel):
     beatmapset_metadata = models.ForeignKey(BeatmapsetMetadata, models.PROTECT, related_name="mappool_beatmaps")
     beatmap_metadata = models.ForeignKey(BeatmapMetadata, models.PROTECT, related_name="mappool_beatmaps")
     mods = models.ManyToManyField(BeatmapMod, "related_beatmaps")
     star_rating = models.FloatField()
+
+    class Serialization:
+        FIELDS = ["id", "star_rating"]
 
     @staticmethod
     async def get_rows_data(beatmap: Beatmap, mods: tuple[str | None, ...]):
@@ -178,19 +190,25 @@ class MappoolBeatmap(models.Model):
         return self.slot
 
 
-class MappoolBeatmapConnection(models.Model):
+class MappoolBeatmapConnection(SerializableModel):
     mappool = models.ForeignKey("Mappool", models.CASCADE, related_name="beatmap_connections")
     beatmap = models.ForeignKey(MappoolBeatmap, models.CASCADE, related_name="mappool_connections")
     slot = models.CharField(max_length=8)
 
+    class Serialization:
+        FIELDS = ["slot"]
 
-class Mappool(models.Model):
+
+class Mappool(SerializableModel):
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=512, default="")
     beatmaps = models.ManyToManyField(MappoolBeatmap, "mappools", through=MappoolBeatmapConnection)
     submitted_by = models.ForeignKey(OsuUser, models.PROTECT, related_name="submitted_mappools")
     favorites = models.ManyToManyField(OsuUser, through="MappoolFavorite", related_name="mappool_favorites")
     avg_star_rating = models.FloatField()
+
+    class Serialization:
+        FIELDS = ["id", "name", "description", "avg_star_rating"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -253,7 +271,7 @@ class Mappool(models.Model):
         return self.name
 
 
-class Tournament(models.Model):
+class Tournament(SerializableModel):
     name = models.CharField(max_length=128, unique=True)
     abbreviation = models.CharField(max_length=16, default="")
     link = models.CharField(max_length=256, default="")
@@ -262,6 +280,12 @@ class Tournament(models.Model):
     mappools = models.ManyToManyField(Mappool, through="MappoolConnection")
     submitted_by = models.ForeignKey(OsuUser, models.PROTECT, related_name="submitted_tournaments")
     favorites = models.ManyToManyField(OsuUser, through="TournamentFavorite", related_name="tournament_favorites")
+
+    class Serialization:
+        FIELDS = ["id", "name", "abbreviation", "link", "description"]
+        TRANSFORM = {
+            "involvements": "staff"
+        }
 
     @staticmethod
     def _new_tournament(
@@ -355,10 +379,13 @@ class Tournament(models.Model):
         return self.name
 
 
-class TournamentInvolvement(models.Model):
+class TournamentInvolvement(SerializableModel):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name="involvements")
     user = models.ForeignKey(OsuUser, on_delete=models.CASCADE, related_name="involvements")
     roles = UserRolesField(default=0)
+
+    class Serialization:
+        FIELDS = ["roles"]
 
     class Meta:
         constraints = [
@@ -366,22 +393,31 @@ class TournamentInvolvement(models.Model):
         ]
 
 
-class MappoolConnection(models.Model):
+class MappoolConnection(SerializableModel):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name="mappool_connections")
     mappool = models.ForeignKey(Mappool, on_delete=models.CASCADE, related_name="tournament_connections")
     name_override = models.CharField(max_length=64, null=True)
+
+    class Serialization:
+        FIELDS = ["name_override"]
 
     def __str__(self):
         return self.name_override if self.name_override is not None else ""
 
 
-class MappoolFavorite(models.Model):
+class MappoolFavorite(SerializableModel):
     mappool = models.ForeignKey(Mappool, models.CASCADE, related_name="favorite_connections")
     user = models.ForeignKey(OsuUser, models.CASCADE, related_name="mappool_favorite_connections")
     timestamp = models.PositiveBigIntegerField()
 
+    class Serialization:
+        FIELDS = ["timestamp"]
 
-class TournamentFavorite(models.Model):
+
+class TournamentFavorite(SerializableModel):
     tournament = models.ForeignKey(Tournament, models.CASCADE, related_name="favorite_connections")
     user = models.ForeignKey(OsuUser, models.CASCADE, related_name="tournament_favorite_connections")
     timestamp = models.PositiveBigIntegerField()
+
+    class Serialization:
+        FIELDS = ["timestamp"]
