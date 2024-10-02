@@ -28,4 +28,6 @@ Steps to setup:
 
 Steps to run:
 - python command depends on machine, but in /otdb `py manage.py runserver` to run the site
-- in /otdb/ts `py build.py --debug --watch`, where `--debug` and `--watch` are optional, to build js and css files
+- in /otdb/ts `py build.py --debug --watch` to build js and css files (the flags are optional)
+  - `--debug` will create a debug version of bundled files (js isn't minimized)
+  - `--watch` will watch for changes in ts/css files and automatically rebuild
