@@ -1,6 +1,18 @@
+.tournament-name-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
 #tournament-name {
     text-align: center;
     color: white;
+}
+
+.tournament-external-link {
+    width: 30px;
+    height: 30px;
 }
 
 #tournament-container {
