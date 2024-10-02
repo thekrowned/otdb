@@ -17,6 +17,8 @@ import os
 from pathlib import Path
 from osu import AsynchronousClient, AsynchronousAuthHandler, Scope
 
+from common.dummy_api import DummyClient
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,8 +46,6 @@ INSTALLED_APPS = [
     "api.apps.ApiConfig",
     "admin.apps.AdminConfig",
 
-    "debug_toolbar",
-
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -62,7 +62,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "common.middleware.ExceptionHandlingMiddleware",
     "common.middleware.TrafficStatisticsMiddleware"
 ]
@@ -92,6 +91,7 @@ from django.utils.log import DEFAULT_LOGGING
 
 
 LOGGING = DEFAULT_LOGGING
+LOGGING["handlers"]["console"]["level"] = "DEBUG" if DEBUG else "INFO"
 LOGGING["loggers"]["django.request"] = {
     "handlers": ["console"],
     "level": "DEBUG"
@@ -173,9 +173,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 APPEND_SLASH = True
 
 
-OSU_CLIENT_ID = int(os.getenv("OSU_CLIENT_ID"))
-OSU_CLIENT_SECRET = os.getenv("OSU_CLIENT_SECRET")
-OSU_CLIENT_REDIRECT_URI = os.getenv("OSU_CLIENT_REDIRECT_URI")
-auth = AsynchronousAuthHandler(OSU_CLIENT_ID, OSU_CLIENT_SECRET, OSU_CLIENT_REDIRECT_URI, Scope.identify())
-OSU_AUTH_URL = auth.get_auth_url()
-OSU_CLIENT = AsynchronousClient(auth)
+if not IS_GITHUB_WORKFLOW:
+    OSU_CLIENT_ID = int(os.getenv("OSU_CLIENT_ID"))
+    OSU_CLIENT_SECRET = os.getenv("OSU_CLIENT_SECRET")
+    OSU_CLIENT_REDIRECT_URI = os.getenv("OSU_CLIENT_REDIRECT_URI")
+    auth = AsynchronousAuthHandler(OSU_CLIENT_ID, OSU_CLIENT_SECRET, OSU_CLIENT_REDIRECT_URI, Scope.identify())
+    OSU_AUTH_URL = auth.get_auth_url()
+    OSU_CLIENT = AsynchronousClient(auth)
+else:
+    OSU_CLIENT = DummyClient(BASE_DIR)

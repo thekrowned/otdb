@@ -23,7 +23,9 @@ class TournamentListing(Listing[Tournament]):
 
 async def get_full_tournament(user, id):
     try:
-        tournament = await Tournament.objects.prefetch_related(
+        tournament = await Tournament.objects.annotate(
+            favorite_count=models.Count("favorites")
+        ).prefetch_related(
             "involvements__user",
             "mappool_connections",
             models.Prefetch(
@@ -37,7 +39,7 @@ async def get_full_tournament(user, id):
         return
     
     data = tournament.serialize(
-        includes=["involvements__user", "submitted_by", "mappool_connections__mappool__favorite_count"],
+        includes=["involvements__user", "submitted_by", "mappool_connections__mappool__favorite_count", "favorite_count"],
         excludes=["mappool_connections__tournament_id"]
     )
     

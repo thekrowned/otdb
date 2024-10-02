@@ -58,13 +58,17 @@ async def get_full_mappool(user, mappool_id) -> dict | None:
     )
 
     try:
-        mappool = await Mappool.objects.prefetch_related(
+        mappool = await Mappool.objects.annotate(
+            favorite_count=models.Count("favorites")
+        ).prefetch_related(
             *prefetch
-        ).select_related(*include).aget(id=mappool_id)
+        ).select_related(
+            *include
+        ).aget(id=mappool_id)
     except Mappool.DoesNotExist:
         return
 
-    data = mappool.serialize(includes=include+prefetch)
+    data = mappool.serialize(includes=include+prefetch+("favorite_count",))
 
     if user.is_authenticated:
         data["is_favorited"] = await mappool.is_favorited(user.id)
