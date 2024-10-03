@@ -93,3 +93,8 @@ class TrafficStatistic(SerializableModel):
     @classmethod
     async def now(cls):
         return await sync_to_async(cls._now)()
+
+
+class SQLFuncMigration(SerializableModel):
+    filename = models.CharField(max_length=255)
+    last_state = models.CharField(max_length=255)

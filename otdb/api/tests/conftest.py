@@ -1,15 +1,10 @@
 from django.test import AsyncRequestFactory
-from django.db import connection
 from django.conf import settings
 
 from asgiref.sync import sync_to_async
-import os
 import pytest
 
 from main.models import OsuUser
-
-
-SQL_DIR = os.path.join(os.path.split(settings.BASE_DIR)[0], "sql")
 
 
 USER = {
@@ -78,18 +73,10 @@ def create_user():
     user.save()
 
 
-def create_psql_functions():
-    with connection.cursor() as cursor:
-        for file in os.listdir(SQL_DIR):
-            with open(os.path.join(SQL_DIR, file), "r") as f:
-                cursor.execute(f.read())
-
-
 @pytest.fixture(scope="session")
 def django_db_setup(django_db_setup, django_db_blocker):
     with django_db_blocker.unblock():
         create_user()
-        create_psql_functions()
 
 
 @pytest.fixture
