@@ -54,8 +54,10 @@
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}">Dashboard</a>
                 <a href="{% url 'user' id=user.id %}">Profile</a>
-                <hr/>
+            {% else %}
+                <a href="{{ auth_url }}">Login</a>
             {% endif %}
+            <hr/>
             <a href="{% url 'tournaments' %}">Tournaments</a>
             <a href="{% url 'mappools' %}">Mappools</a>
         </div>
