@@ -80,7 +80,7 @@ async def tournaments(req, id=None):
         "name": StringType(range(1, 129)),
         "abbreviation": StringType(range(0, 17), optional=True),
         "link": StringType(range(0, 257), optional=True),
-        "description": StringType(range(0, 513), optional=True),
+        "description": StringType(range(0, 1025), optional=True),
         "staff": ListType(
             DictionaryType({
                 "id": IntegerType(minimum=0),

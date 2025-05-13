@@ -107,7 +107,7 @@ FOR n_i IN 1 .. array_length(r_mpbm, 1) LOOP
 	    b_mpbm_exists := true;
 
 	    -- If both mappoolbeatmaps have no mods
-	    IF array_length(r_bm_mods, 2) = 0 AND (SELECT COUNT(*) FROM database_mappoolbeatmap_mods WHERE mappoolbeatmap_id = r_tmp_mpbm.id) = 0 THEN
+	    IF coalesce(array_length(r_bm_mods, 2), 0) = 0 AND (SELECT COUNT(*) FROM database_mappoolbeatmap_mods WHERE mappoolbeatmap_id = r_tmp_mpbm.id) = 0 THEN
 	        b_mpbm_exists := true;
 	    ELSE
 	        -- Check that mods on both mappoolbeatmap rows match
@@ -118,7 +118,7 @@ FOR n_i IN 1 .. array_length(r_mpbm, 1) LOOP
             ) LOOP
                 b_mod_matches := false;
 
-                FOR n_mod_i IN 1 .. array_length(r_bm_mods, 2) LOOP
+                FOR n_mod_i IN coalesce(array_lower(r_bm_mods, 2), 1) .. coalesce(array_upper(r_bm_mods, 2), 0) LOOP  -- array_length returning null sometimes
                     IF r_bm_mods[n_i][n_mod_i].acronym = r_tmp_bm_mod.acronym AND r_bm_mods[n_i][n_mod_i].settings = r_tmp_bm_mod.settings THEN
                         b_mod_matches := true;
                         EXIT;
@@ -164,8 +164,8 @@ FOR n_i IN 1 .. array_length(r_mpbm, 1) LOOP
 	);
 
 	-- Insert mods
-	IF array_length(r_bm_mods, 2) > 0 THEN
-        FOR n_mod_i IN 1 .. array_length(r_bm_mods, 2) LOOP
+	IF coalesce(array_length(r_bm_mods, 2), 0) > 0 THEN
+        FOR n_mod_i IN coalesce(array_lower(r_bm_mods, 2), 1) .. coalesce(array_upper(r_bm_mods, 2), 0) LOOP
             IF r_bm_mods[n_i][n_mod_i].acronym IS NULL THEN
                 CONTINUE;
             END IF;

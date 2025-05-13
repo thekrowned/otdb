@@ -106,12 +106,12 @@ async def mappools(req, mappool_id=None):
 @accepts_json_data(
     DictionaryType({
         "id": IntegerType(minimum=0, optional=True),
-        "name": StringType(range(1, 65)),
-        "description": StringType(range(0, 513), optional=True),
+        "name": StringType(range(1, 129)),
+        "description": StringType(range(0, 1024), optional=True),
         "beatmaps": ListType(
             DictionaryType({
                 "id": IntegerType(minimum=0),
-                "slot": StringType(range(1, 24)),
+                "slot": StringType(range(1, 9)),
                 "mods": ListType(
                     StringType(range(2, 3), options=VALID_MODS),
                     unique=True,

@@ -1,7 +1,3 @@
-def sql_s(s: str):
-    return "'" + s.replace("'", "''") + "'"
-
-
 def unzip(seq):
     """Only works if each map object is consumed before grabbing the next"""
     if len(seq) == 0:

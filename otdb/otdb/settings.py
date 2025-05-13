@@ -182,3 +182,31 @@ if not IS_GITHUB_WORKFLOW:
     OSU_CLIENT = AsynchronousClient(auth)
 else:
     OSU_CLIENT = DummyClient(BASE_DIR)
+
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+if not IS_GITHUB_WORKFLOW:
+    from google_auth_oauthlib import flow
+
+    redirect_uris = [
+                "http://127.0.0.1:8000/google-auth-callback",
+                "https://otdb.sheppsu.me/google-auth-callback"
+            ]
+
+    GOOGLE_AUTH_FLOW = flow.Flow.from_client_config({
+        "web": {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uris": redirect_uris,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://accounts.google.com/o/oauth2/token"
+        }
+    }, scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"])
+    GOOGLE_AUTH_FLOW.redirect_uri = redirect_uris[0 if DEBUG else 1]
+
+    GOOGLE_OAUTH_URL, _ = GOOGLE_AUTH_FLOW.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent"
+    )

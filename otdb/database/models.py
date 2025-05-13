@@ -4,7 +4,7 @@ from django.conf import settings
 
 from common.models import enum_field, SerializableModel
 from common.exceptions import ClientException, ServerException
-from common.util import sql_s, unzip, find_invalids
+from common.util import unzip, find_invalids
 
 from osu import AsynchronousClient, Beatmap, Mods, Mod, GameModeStr
 from enum import IntFlag
@@ -152,39 +152,38 @@ class MappoolBeatmap(SerializableModel):
         for mod in filter(lambda m: m is not None, mods):
             try:
                 mods_flag += Mods[Mod(mod).name].value
-            except (ValueError, KeyError):
+            except AttributeError:
                 continue
         difficulty = await beatmap_cache.get_beatmap_attributes(beatmap, mods_flag)
 
         bms = beatmap.beatmapset
 
-        bms_row = "ROW(%d, %s, %s, %s)::database_beatmapsetmetadata" % (
-            int(bms.id),
-            sql_s(bms.artist),
-            sql_s(bms.title),
-            sql_s(bms.creator)
+        return (
+            (  # beatmapset metadata
+                bms.id,
+                bms.artist,
+                bms.title,
+                bms.creator
+            ),
+            (  # beatmap metadata
+                beatmap.id,
+                beatmap.version,
+                beatmap.ar,
+                beatmap.accuracy,
+                beatmap.cs,
+                beatmap.drain,
+                beatmap.total_length,
+                beatmap.bpm
+            ),
+            (  # mappool beatmap
+                difficulty.stars,
+                beatmap.id,
+                bms.id
+            ),
+            (
+                mods
+            )
         )
-        bm_row = "ROW(%d, %s, %f, %f, %f, %f, %f, %f)::database_beatmapmetadata" % (
-            int(beatmap.id),
-            sql_s(beatmap.version),
-            beatmap.ar,
-            beatmap.accuracy,
-            beatmap.cs,
-            beatmap.drain,
-            beatmap.total_length,
-            beatmap.bpm
-        )
-        mpbm_row = "ROW(0, %f, %d, %d)::database_mappoolbeatmap" % (
-            difficulty.stars,
-            int(beatmap.id),
-            int(bms.id)
-        )
-        mods_row = "ARRAY[" + ",".join(map(
-            lambda mod: ("ROW(0, %s, '{}')" % sql_s(mod)) if mod is not None else "null",
-            mods
-        )) + "]::database_beatmapmod[]"
-
-        return mpbm_row, bm_row, bms_row, mods_row
 
     def __str__(self):
         return self.slot
@@ -193,17 +192,17 @@ class MappoolBeatmap(SerializableModel):
 class MappoolBeatmapConnection(SerializableModel):
     mappool = models.ForeignKey("Mappool", models.CASCADE, related_name="beatmap_connections")
     beatmap = models.ForeignKey(MappoolBeatmap, models.CASCADE, related_name="mappool_connections")
-    slot = models.CharField(max_length=8)
+    slot = models.CharField(max_length=12)
 
     class Serialization:
         FIELDS = ["slot"]
 
 
 class Mappool(SerializableModel):
-    name = models.CharField(max_length=64)
-    description = models.CharField(max_length=512, default="")
+    name = models.CharField(max_length=128)
+    description = models.CharField(max_length=1024, default="")
     beatmaps = models.ManyToManyField(MappoolBeatmap, "mappools", through=MappoolBeatmapConnection)
-    submitted_by = models.ForeignKey(OsuUser, models.PROTECT, related_name="submitted_mappools")
+    submitted_by = models.ForeignKey(OsuUser, models.SET_NULL, related_name="submitted_mappools", null=True)
     favorites = models.ManyToManyField(OsuUser, through="MappoolFavorite", related_name="mappool_favorites")
     avg_star_rating = models.FloatField()
 
@@ -214,14 +213,26 @@ class Mappool(SerializableModel):
         super().__init__(*args, **kwargs)
 
     @staticmethod
-    def _new_mappool(cls, id: int, name: str, description: str, slots: list[str], submitted_by: OsuUser, data):
+    def _new_mappool(cls, id: int, name: str, description: str, slots: list[str], submitted_by: OsuUser | None, data: list[tuple[tuple, tuple, tuple, tuple]]):
+        n_beatmaps = len(slots)
+
+        slots_string = f"ARRAY[{','.join(('%s' for _ in range(n_beatmaps)))}]"
+        mp_beatmaps_string = f"ARRAY[{','.join(('ROW(0, %s, %s, %s)::database_mappoolbeatmap' for _ in range(n_beatmaps)))}]"
+        beatmaps_string = f"ARRAY[{','.join(('ROW(%s, %s, %s, %s, %s, %s, %s, %s)::database_beatmapmetadata' for _ in range(n_beatmaps)))}]"
+        beatmapsets_string = f"ARRAY[{','.join(('ROW(%s, %s, %s, %s)::database_beatmapsetmetadata' for _ in range(n_beatmaps)))}]"
+        mods_string = f"ARRAY[{','.join(('ROW(0,%s,\'\x7B\x7D\')' for _ in range(len(data[0][3]))))}]::database_beatmapmod[]"
+        all_mods_string = f"ARRAY[{','.join((mods_string for _ in range(n_beatmaps)))}]"
+
         with connection.cursor() as cursor:
-            cursor.execute("SELECT \"new_mappool\"(%s, %s, %d, ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], ARRAY[%s], %d)" % (
-                sql_s(name),
-                sql_s(description),
-                submitted_by.id,
-                ",".join(map(sql_s, slots)),
-                *map(",".join, unzip(data)),
+            cursor.execute(f"SELECT \"new_mappool\"(%s::text, %s::text, %s, {slots_string}, {mp_beatmaps_string}, {beatmaps_string}, {beatmapsets_string}, {all_mods_string}, %s)", (
+                name,
+                description,
+                None if submitted_by is None else submitted_by.id,
+                *slots,
+                *itertools.chain(*itertools.chain(entry[2] for entry in data)),
+                *itertools.chain(*itertools.chain(entry[1] for entry in data)),
+                *itertools.chain(*itertools.chain(entry[0] for entry in data)),
+                *itertools.chain(*itertools.chain(entry[3] for entry in data)),
                 id
             ))
             return cls(id=cursor.fetchone()[0], name=name, description=description, submitted_by=submitted_by)
@@ -231,19 +242,19 @@ class Mappool(SerializableModel):
         cls,
         name: str,
         description: str,
-        submitted_by: OsuUser,
+        submitted_by: OsuUser | None,
         beatmap_ids: list[int],
         slots: list[str],
         mods: list[list[str]],
         mappool_id: int = 0
     ):
-        unique_beatmap_ids = set(beatmap_ids)
-        beatmaps = await osu_client.get_beatmaps(unique_beatmap_ids)
+        beatmaps = await osu_client.get_beatmaps(beatmap_ids)
 
         for beatmap in beatmaps:
             if beatmap.mode != GameModeStr.STANDARD:
                 raise ClientException("Sorry! Only osu!std mappools are supported at the moment.")
 
+        unique_beatmap_ids = set(beatmap_ids)
         if len(beatmaps) != len(unique_beatmap_ids):
             raise ClientException(
                 f"Invalid beatmap id(s): "
@@ -252,8 +263,7 @@ class Mappool(SerializableModel):
 
         beatmaps = [next((beatmap for beatmap in beatmaps if beatmap.id == id)) for id in beatmap_ids]
 
-        max_mods = sorted(map(len, mods))[-1]
-        # not using gather as to not barrage the site
+        max_mods = max(map(len, mods))
         data = await asyncio.gather(*(
             MappoolBeatmap.get_rows_data(
                 beatmaps[i],
@@ -275,10 +285,10 @@ class Tournament(SerializableModel):
     name = models.CharField(max_length=128, unique=True)
     abbreviation = models.CharField(max_length=16, default="")
     link = models.CharField(max_length=256, default="")
-    description = models.CharField(max_length=512, default="")
+    description = models.CharField(max_length=1024, default="")
     involved_users = models.ManyToManyField(OsuUser, through="TournamentInvolvement")
     mappools = models.ManyToManyField(Mappool, through="MappoolConnection")
-    submitted_by = models.ForeignKey(OsuUser, models.PROTECT, related_name="submitted_tournaments")
+    submitted_by = models.ForeignKey(OsuUser, models.SET_NULL, related_name="submitted_tournaments", null=True)
     favorites = models.ManyToManyField(OsuUser, through="TournamentFavorite", related_name="tournament_favorites")
 
     class Serialization:
@@ -300,26 +310,21 @@ class Tournament(SerializableModel):
         mappools: list,
         tournament_id: int = 0
     ):
-        user_rows = (f"ROW({u[0]},{sql_s(u[1])},{sql_s(u[2])},{sql_s(u[3])},0)::main_osuuser" for u in users)
-        mappool_rows = (
-            (
-                f"ROW(0,{"null" if conn["name_override"] is None else sql_s(conn['name_override'])},"
-                f"{conn['id']},0)::database_mappoolconnection"
-            )
-            for conn in mappools
-        )
+        users_string = f"ARRAY[{','.join(('ROW(%s,%s,%s,%s,0)::main_osuuser' for _ in range(len(users))))}]::main_osuuser[]"
+        roles_string = f"ARRAY[{','.join(('%s' for _ in range(len(roles))))}]::integer[]"
+        mappools_string = f"ARRAY[{','.join(('ROW(0,%s,%s,0)::database_mappoolconnection' for _ in range(len(mappools))))}]::database_mappoolconnection[]"
 
         with connection.cursor() as cursor:
-            cursor.execute("SELECT \"new_tournament\"(%d, %s, %s, %s, %s, %d, %s, %s, %s)" % (
+            cursor.execute(f"SELECT \"new_tournament\"(%s, %s, %s, %s, %s, %s, {users_string}, {roles_string}, {mappools_string})", (
                 tournament_id,
-                sql_s(name),
-                sql_s(abbr),
-                sql_s(description),
-                sql_s(link),
+                name,
+                abbr,
+                description,
+                link,
                 submitted_by_id,
-                "ARRAY[%s]::main_osuuser[]" % ",".join(user_rows),
-                "ARRAY[%s]::integer[]" % ",".join(map(str, roles)),
-                "ARRAY[%s]::database_mappoolconnection[]" % ",".join(mappool_rows)
+                *itertools.chain(*users),
+                *roles,
+                *itertools.chain(*mappools)
             ))
             return cls(
                 id=cursor.fetchone()[0],
@@ -337,7 +342,7 @@ class Tournament(SerializableModel):
         abbr: str,
         description: str,
         link: str,
-        submitted_by_id: int,
+        submitted_by_id: int | None,
         staff: list,
         mappools: list,
         tournament_id: int = 0
@@ -368,7 +373,7 @@ class Tournament(SerializableModel):
                 user.cover.url
             ) for user in users],
             [user["roles"] for user in staff],
-            mappools,
+            [(mappool["name_override"], mappool["id"]) for mappool in mappools],
             tournament_id
         )
     
@@ -400,6 +405,11 @@ class MappoolConnection(SerializableModel):
 
     class Serialization:
         FIELDS = ["name_override"]
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tournament", "mappool"], name="mappoolconnection_unique_constraint")
+        ]
 
     def __str__(self):
         return self.name_override if self.name_override is not None else ""
